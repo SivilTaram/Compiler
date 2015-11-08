@@ -1,25 +1,28 @@
 ```pascal
 program pl0(input,output,fin) ;  { version 1.0 oct.1989 }
 { PL/0 compiler with code generation }
-const norw = 13;          { no. of reserved words }
-      txmax = 100;        { length of identifier table }
-      nmax = 14;          { max. no. of digits in numbers }
-      al = 10;            { length of identifiers }
-      amax = 2047;        { maximum address }
-      levmax = 3;         { maximum depth of block nesting }
+const norw = 13;          { no. of reserved words }{保留字的数量}
+      txmax = 100;        { length of identifier table }{标识符表的长度}
+      nmax = 14;          { max. no. of digits in numbers }{数字最大长度}
+      al = 10;            { length of identifiers }{*标识符的数量*}
+      amax = 2047;        { maximum address }{* 地址最大范围*}
+      levmax = 3;         { maximum depth of block nesting }[FIXME]{* 最大嵌套层次？ *}
       cxmax = 200;        { size of code array }
-      
+{* 查询资料得知，()是子界类型，类似于java和C#里的枚举类，以下为查找的一个示例：
+type
+months = (Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec);  *}
+
 type symbol =
      ( nul,ident,number,plus,minus,times,slash,oddsym,eql,neq,lss,
        leq,gtr,geq,lparen,rparen,comma,semicolon,period,becomes,
        beginsym,endsym,ifsym,thensym,whilesym,dosym,callsym,constsym,
-       varsym,procsym,readsym,writesym );
-     alfa = packed array[1..al] of char;
+       varsym,procsym,readsym,writesym );{* 单词集，即定义的单词*}
+     alfa = packed array[1..al] of char;{*查阅资料得知，packed是为了压缩数组，但是很奇怪，没有给相应的标识符集合，怎么判断是否是标识符呢？*}
      objecttyp = (constant,variable,prosedure);
      symset = set of symbol;
-     fct = ( lit,opr,lod,sto,cal,int,jmp,jpc,red,wrt ); { functions }
-     instruction = packed record
-                     f : fct;            { function code }
+     fct = ( lit,opr,lod,sto,cal,int,jmp,jpc,red,wrt ); { functions }{* 抽象机定义的10条汇编指令*}
+     instruction = packed record {*record是记录类型，类似于C里结构体的感觉*}
+                     f : fct;            { function code }{* 这个记录类型记录了目标代码集，层次域以及地址空间范围*}
                      l : 0..levmax;      { level }
                      a : 0..amax;        { displacement address }
                    end;
@@ -35,14 +38,14 @@ type symbol =
                       wrt 0, 0 : write stack-top
                   }
 
-var   ch : char;      { last character read }
-      sym: symbol;    { last symbol read }
-      id : alfa;      { last identifier read }
-      num: integer;   { last number read }
-      cc : integer;   { character count }
-      ll : integer;   { line length }
-      kk,err: integer;
-      cx : integer;   { code allocation index }
+var   ch : char;      { last character read }{*读的最后一个字符*}
+      sym: symbol;    { last symbol read }{*读到的最后一个单词*}
+      id : alfa;      { last identifier read }{*读到的最后一个标识符*}
+      num: integer;   { last number read }{*读到的最后一个数字，应该是用来参与计算的*}
+      cc : integer;   { character count }{*字符的数量*}
+      ll : integer;   { line length }{*读入的一行的长度*}
+      kk,err: integer;{* kk 是什么？根据下面的推测，err应该是错误的个数*}
+      cx : integer;   { code allocation index }{*代码分配序号，代码地址？*}
       line: array[1..81] of char;
       a : alfa;
       code : array[0..cxmax] of instruction;
@@ -52,170 +55,176 @@ var   ch : char;      { last character read }
       mnemonic : array[fct] of
                    packed array[1..5] of char;
       declbegsys, statbegsys, facbegsys : symset;
-      table : array[0..txmax] of
+      table : array[0..txmax] of{* 符号表的设计，其中包含了符号的名字：alfa，符号的类型 *}
                 record
-                  name : alfa;
-                  case kind: objecttyp of
-                    constant : (val:integer );
-                    variable,prosedure: (level,adr: integer )
+                  name : alfa;{*单词的名字*}
+                  case kind: objecttyp of{*kind 是个 objecttype类型，有constant常量，variable变量，prosedure过程*}
+                    constant : (val:integer );{*如果是常量，则在table里记录一个名为val的变量*}
+                    variable,prosedure: (level,adr: integer ){*如果是变量或者过程的话，符号表中需要记录其层次与地址*}
                 end;
-      fin : text;     { source program file }
-      sfile: string;  { source program file name }
+      fin : text;     { source program file }{* 源代码 *}
+      sfile: string;  { source program file name }{* 源文件的名字*}
 
 procedure error( n : integer );  { P384 }
   begin
-    writeln( '****', ' ':cc-1, '^', n:2 );
-    err := err+1
+    writeln( '****', ' ':cc-1, '^', n:2 );{* 在第几个符号处犯了错误码为n的错误？*}
+    err := err+1{*记录error被调用的次数，即记录错误的个数*}
   end; { error }
-  
-procedure getsym;  { P384 }
+ 
+{*该过程为词法分析，读取一个单词*}
+procedure getsym; 
   var i,j,k : integer;
-  procedure getch; { P384 }
+  {* 取字符过程，实际上先读入缓冲区，然后再一个一个字符地读取*}
+  procedure getch; 
     begin
-      if cc = ll  { get character to end of line }
+      if cc = ll  { get character to end of line }{*如果当前已经读到最后一个字符结束，就开始读下一行*}
       then begin { read next line }
-             if eof(fin)
+             if eof(fin){*如果读到文件末尾，则打印结束信息，关闭文件并退出*}
              then begin
                     writeln('program incomplete');
                     close(fin);
                     exit;
                   end;
-             ll := 0;
+             ll := 0;{*开始读取本行内容*}
              cc := 0;
-             write(cx:4,' ');  { print code address }
-             while not eoln(fin) do
+             write(cx:4,' ');  { print code address }{*以4个字符宽度来输出cx，cx是代码地址*}
+             while not eoln(fin) do{*一直到读到换行符为止*}
                begin
-                 ll := ll+1;
-                 read(fin,ch);
-                 write(ch);
-                 line[ll] := ch
-               end;
-             writeln;
-             readln(fin);
-             ll := ll+1;
+                 ll := ll+1; {*行的长度+1*}
+                 read(fin,ch);{*把字符读入*}
+                 write(ch);{*字符串打印*}
+                 line[ll] := ch{*将本行的缓冲区填满*}
+               end;{*至此将一行已经读入到内存中，存储在line数组中*}
+             writeln;{*输出源程序*}
+             readln(fin);{*跳过一个换行符*}
+             ll := ll+1;{*最后一个字符，填入字符串终结符*}
              line[ll] := ' ' { process end-line }
            end;
-      cc := cc+1;
-      ch := line[cc]
+      {*如果不是到了行末尾，就正常读字符*}
+      cc := cc+1;{*开始读缓冲区中的字符*}
+      ch := line[cc]{*ch中保存最后一个读到的字符，这个程序居然是以1为下标开始序号*}
     end; { getch }
-  begin { procedure getsym;  P384 }
-    while ch = ' ' do
+  begin { procedure getsym;  P384 }{*getsym函数开始*}
+    while ch = ' ' do{*如果读到的字符为空白符就一直向后读*}
       getch;
-    if ch in ['a'..'z']
+    if ch in ['a'..'z']{*如果读到的字符是a-z之间，要么是标识符，要么是保留字(起始处字符必须是小写字母)*}
     then begin  { identifier of reserved word }
-           k := 0;
+           k := 0;{*开始读字符*}
            repeat
-             if k < al
+             if k < al{*如果k小于标识符的最大长度*}
              then begin
                     k := k+1;
-                    a[k] := ch
+                    a[k] := ch{*a是个临时数组，用来存放读到的字符串*}
                   end;
              getch
-           until not( ch in ['a'..'z','0'..'9']);
-           if k >= kk        { kk : last identifier length }
+           until not( ch in ['a'..'z','0'..'9']);{*直到不是a-z且不是0-9*}
+           if k >= kk        { kk : last identifier length }{*kk表示所有单词中的最长字符长度，长度不足的用空格补足*}
            then kk := k
-           else repeat
+           else repeat {*否则要进行对齐处理，但是不太明白，为什么是kk-而不是k+，这样kk下一次的时候不就不一样了吗？*}
                   a[kk] := ' ';
                   kk := kk-1
                 until kk = k;
-           id := a;
+           id := a;{*id存放字符串*}
            i := 1;
-           j := norw;   { binary search reserved word table }
-           repeat
+           j := norw;   { binary search reserved word table }{*norw是保留字的个数，使用二分法来查找保留字*}
+           repeat{二分法确认标识符是否为保留字}
              k := (i+j) div 2;
              if id <= word[k]
              then j := k-1;
              if id >= word[k]
              then i := k+1
            until i > j;
-           if i-1 > j
-           then sym := wsym[k]
-           else sym := ident
+           if i-1 > j{*为什么这里i-1>j时就是保留字符？*}
+           then sym := wsym[k]{}
+           else sym := ident{*没有找到，单词记录为标识符*}
          end
-    else if ch in ['0'..'9']
+    else if ch in ['0'..'9']{*数字*}
          then begin  { number }
-                k := 0;
+                k := 0;{*单词长度重置为0*}
                 num := 0;
-                sym := number;
-                repeat
+                sym := number;{*类型记录为number*}
+                repeat{*循环将字符串的值转变为数字*}
                   num := 10*num+(ord(ch)-ord('0'));
                   k := k+1;
                   getch
                 until not( ch in ['0'..'9']);
-                if k > nmax
+                if k > nmax{*如果超过数字单词规定长度，则报错*}
                 then error(30)
               end
-         else if ch = ':'
+         else if ch = ':'{*如果是冒号*}
               then begin
-                     getch;
-                     if ch = '='
+                     getch;{*再读入一个单词*}
+                     if ch = '='{*赋值符号读入*}
                      then begin
-                            sym := becomes;
+                            sym := becomes;{*赋值符号语义单词*}
                             getch
                           end
-                     else sym := nul
+                     else sym := nul{*否则冒号无效*}
                    end
-              else if ch = '<'
+              else if ch = '<'{*如果是小于号*}
                    then begin
                           getch;
-                          if ch = '='
+                          if ch = '='{*如果是<=号*}
                           then begin
-                                 sym := leq;
+                                 sym := leq;{*leq表示小于等于比较，less equal*}
                                  getch
                                end
-                          else if ch = '>'
+                          else if ch = '>'{*如果是<>号*}
                                then begin
-                                      sym := neq;
+                                      sym := neq;{*neq表示不等于，not equal*}
                                       getch
                                     end
-                               else sym := lss
+                               else sym := lss{*否则的话就是一个简单的小于号，less*}
                         end
-                   else if ch = '>'
+                   else if ch = '>'{*如果是大于号*}
                         then begin
                                getch;
-                               if ch = '='
+                               if ch = '='{*>=符号标识*}
                                then begin
-                                      sym := geq;
+                                      sym := geq;{*geq 即 greater equal*}
                                       getch
                                     end
-                               else sym := gtr
+                               else sym := gtr{*否则就是普通的大于号，即greater*}
                              end
                         else begin
-                               sym := ssym[ch];
+                               sym := ssym[ch];{*操作符集合，字符作为下标进行索引*}
                                getch
                              end
   end; { getsym }
   
-procedure gen( x: fct; y,z : integer ); { P385 }
+{*目标代码生成*}
+procedure gen( x: fct; y,z : integer ); {*fct是目标代码指令集*}
   begin
-    if cx > cxmax
+    if cx > cxmax{*如果目标代码生成位置超出规定的地址边界*}
     then begin
-           writeln('program too long');
+           writeln('program too long');{*如果程序过长...才200行就过长了...*}
            close(fin);
            exit
          end;
-    with code[cx] do
+    with code[cx] do{*将符合条件的代码存入code*}
       begin
-        f := x;
-        l := y;
-        a := z
+        f := x;{*指令*}
+        l := y;{*层级*}
+        a := z{*操作编码*}
       end;
-    cx := cx+1
+    cx := cx+1{*存储下一句符合条件的代码*}
   end; { gen }
-  
-procedure test( s1,s2 :symset; n: integer );  { P386 }
+
+{*用于分析错误并处理*}
+procedure test( s1,s2 :symset; n: integer );  { P386 }{*S1为合法头符号集合，S2为停止符号集合，n为错误编码*}
   begin
-    if not ( sym in s1 )
+    if not ( sym in s1 ){*如果sym不在s1里，就报错*}
     then begin
-           error(n);
-           s1 := s1+s2;
-           while not( sym in s1) do
+           error(n);{*错误类型为n*}
+           s1 := s1+s2;{*报错后s2加入头符号集合中，检测后面是否出现错误*}
+           while not( sym in s1) do{*如果后面再遇到非法符号全部略过*}
              getsym
            end
   end; { test }
   
+{*分程序分析处理程序*}
 procedure block( lev,tx : integer; fsys : symset ); { P386 }
-  var  dx : integer;  { data allocation index }
+  var  dx : integer;  { data allocation index }{}
        tx0: integer;  { initial table index }
        cx0: integer;  { initial code index }
 
@@ -276,7 +285,8 @@ procedure block( lev,tx : integer; fsys : symset ); { P386 }
            end
       else error(4)
     end; { constdeclaration }
-    
+
+{*变量声明处理程序*} 
   procedure vardeclaration; { P387 }
     begin
       if sym = ident
@@ -726,10 +736,14 @@ procedure interpret;  { P391 }
     writeln('END PL/0');
   end; { interpret }
 
+{* main函数 *}
 begin { main }
   writeln('please input source program file name : ');
+  {*通过源文件的名字将要编译的文件读入*}
   readln(sfile);
+  {*fin是源代码文件，assign的作用是将文件名字符串sfile赋给文件变量fin，程序对文件变量fin的操作代替对文件sfile的操作。*}
   assign(fin,sfile);
+  {*以只读的方式打开文件fin*}
   reset(fin);
   for ch := 'A' to ';' do
     ssym[ch] := nul;
