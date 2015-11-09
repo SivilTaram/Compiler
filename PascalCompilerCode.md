@@ -222,81 +222,86 @@ procedure test( s1,s2 :symset; n: integer );  { P386 }{*S1为合法头符号集�
            end
   end; { test }
   
-{*分程序分析处理程序*}
+{*分程序分析处理程序，lev是层次，tx是*}
 procedure block( lev,tx : integer; fsys : symset ); { P386 }
-  var  dx : integer;  { data allocation index }{}
-       tx0: integer;  { initial table index }
-       cx0: integer;  { initial code index }
+  var  dx : integer;  { data allocation index }{*数据段分配的初始地址*}
+       tx0: integer;  { initial table index }{*初始符号表中的下标*}
+       cx0: integer;  { initial code index }{*初始代码数组的下标}
 
+{*将符号插入符号表中，objecttyp是符号的类型*}
   procedure enter( k : objecttyp ); { P386 }
     begin  { enter object into table }
-      tx := tx+1;
-      with table[tx] do
+      tx := tx+1;{*符号表下标+1*}
+      with table[tx] do{*在table[tx]*}
         begin
-          name := id;
-          kind := k;
+          name := id;{*符号表中有名字*}
+          kind := k;{*问题：k现在类型未知，赋值之后可以决定kind的类型，即k的类型决定kind的类型*}
           case k of
-            constant : begin
-                         if num > amax
+            constant : begin{*如果k是常量类型的话*}
+                         if num > amax{*如果数字的值比预计最大位数多，则抛出错误30*}
                          then begin
                                 error(30);
                                 num := 0
                               end;
-                         val := num
+                         val := num{*如果数字的位宽在接受范围内，则将num赋值给val*}
                        end;
-            variable : begin
-                         level := lev;
-                         adr := dx;
-                         dx := dx+1
+            variable : begin{*如果k是变量类型的话*}
+                         level := lev;{*记录变量当前所处于的层次*}
+                         adr := dx;{*记录变量的地址*}
+                         dx := dx+1{*变量的地址+1？[FIXME]*}
                        end;
-            prosedure: level := lev;
+            prosedure: level := lev;{*过程的话，就记录其层次关系，过程不应该也有adr吗？不赋值了？*}
           end
         end
     end; { enter }
 
+{*返回值类型为整型的，传入参数为alfa类型，alfa是标识符，此函数的作用是给定标识符，从符号表中查出其位置？*}
   function position ( id : alfa ): integer; { P386 }
     var i : integer;
     begin
-      table[0].name := id;
+      table[0].name := id;{*为啥一进来就让table[0].name=id？？[FIXME]}
       i := tx;
       while table[i].name <> id do
         i := i-1;
       position := i
     end;  { position }
-    
+
+  {*常量声明*}
   procedure constdeclaration; { P386 }
     begin
-      if sym = ident
+      if sym = ident{*获取一个标识符*}
       then begin
              getsym;
-             if sym in [eql,becomes]
+             if sym in [eql,becomes]{*eql 为= becomes即：=，起始符是两个都行*}
              then begin
-                    if sym = becomes
-                    then error(1);
-                    getsym;
-                    if sym = number
+                    if sym = becomes{*既然不想让becomes进来，为什么还要判断becomes？为了错误处理更好？*}
+                    	     then error(1);
+                    getsym;{*读入又一个单词*}
+                    if sym = number{*如果读入的是数字*}
                     then begin
-                           enter(constant);
-                           getsym
+                           enter(constant);{*把常量插入符号表中*}
+                           getsym{*再次读入符号*}
                          end
-                    else error(2)
+                    else error(2){*如果不是数字的话，抛出错误2*}
                   end
-             else error(3)
+             else error(3){*如果既不是becomes也不是eql，则抛出错误3*}
            end
-      else error(4)
+	    {*这里的sym可以是有多个标识符，标识符之间插入逗号的！*}
+      else error(4){*如果不是标识符，则抛出错误4—const后应为标识符*}
     end; { constdeclaration }
 
-{*变量声明处理程序*} 
+{*变量声明处理程序，在检测到var之后使用*} 
   procedure vardeclaration; { P387 }
     begin
-      if sym = ident
+      if sym = ident{*如果读到的是标识符*}
       then begin
-             enter(variable);
+             enter(variable);{*则以variable的类型添加到符号表中去*}
              getsym
            end
-      else error(4)
+      else error(4){*否则抛出错误4号的错误*}
     end; { vardeclaration }
-    
+
+{*列出P-code指令清单*}  
   procedure listcode;  { P387 }
     var i : integer;
     begin
@@ -542,65 +547,76 @@ procedure block( lev,tx : integer; fsys : symset ); { P386 }
                                     end;
       test(fsys,[],19)
     end; { statement }
-  begin  {   procedure block( lev,tx : integer; fsys : symset );    P390
+
+  {*block函数的主体开始，先将过程的名字添入符号表中*}
+  begin  {   procedure block( lev,tx : integer; fsys : symset );
                 var  dx : integer;  /* data allocation index */
                      tx0: integer;  /*initial table index */
                      cx0: integer;  /* initial code index */              }
-    dx := 3;
-    tx0 := tx;
-    table[tx].adr := cx;
+    dx := 3;{*为什么一上来dx=3？前两个放什么东西了吗...*}
+    tx0 := tx;{*tx0=tx，tx是指起始地址吧[FIXME]*}
+    table[tx].adr := cx;{*符号表中将该过程的地址插入*}
     gen(jmp,0,0); { jump from declaration part to statement part }
-    if lev > levmax
+    {*生成一条暂时没有参数的jmp指令存放在code数组中*}
+    if lev > levmax{*如果嵌套层次太深则报错，抛出号为32的错误*}
     then error(32);
 
     repeat
-      if sym = constsym
+{*const常量声明格式如下：
+const a = 123;在我们的文法中，右侧目前只能是数字
+}
+      if sym = constsym{*在调用block前必然是已经getsym()过的，所以sym=constsym表明是一个常量*}
       then begin
-             getsym;
+             getsym;{*获取一个单词*}
              repeat
-               constdeclaration;
-               while sym = comma do
+               constdeclaration;{*常量定义函数，将常量符号插入符号表中*}
+               while sym = comma do{*在constdeclaration函数成功的最后一句有读入字符串，这里如果有多个常量则要全部读进来。*}
                  begin
                    getsym;
                    constdeclaration
                  end;
-               if sym = semicolon
+               if sym = semicolon{*如果遇到分号则表示常量定义结束*}
                then getsym
-               else error(5)
-             until sym <> ident
+               else error(5){*否则抛出错误5—没有以分号结尾}
+             until sym <> ident{*直到符号不是标识符为止，表明此时常量定义已经完成}
            end;
-      if sym = varsym
+{*var变量声明格式如下：
+var
+a ,b : real;
+}
+      if sym = varsym{* 如果遇到了var打头的变量声明*}
       then begin
              getsym;
              repeat
-               vardeclaration;
-               while sym = comma do
+               vardeclaration;{*变量声明定义过程，将变量插入符号表中*}
+               while sym = comma do{*如果是逗号的话则一直读取并插入符号表*}
                  begin
                    getsym;
                    vardeclaration
                  end;
-               if sym = semicolon
+               if sym = semicolon{*遇到分号表明本行结束，下一行继续开始}
                then getsym
                else error(5)
              until sym <> ident;
            end;
-      while sym = procsym do
+      while sym = procsym do{*如果是分程序的定义标识符*}
         begin
           getsym;
-          if sym = ident
+          if sym = ident{*分程序的定义标识符后是分程序的名字*}
           then begin
-                 enter(prosedure);
+                 enter(prosedure);{*以prosedure的类型插入符号表*}
                  getsym
                end
-          else error(4);
-          if sym = semicolon
+          else error(4);{*否则抛出错误4*}
+          if sym = semicolon{*如果结束符号是;的话*}
           then getsym
           else error(5);
-          block(lev+1,tx,[semicolon]+fsys);
+          block(lev+1,tx,[semicolon]+fsys);{*开始编译分程序，分程序层次在当前程序的层次上+1，但是比较奇怪的是，为什么要有[semicolon]？[FIXME]*}
           if sym = semicolon
           then begin
                  getsym;
-                 test( statbegsys+[ident,procsym],fsys,6)
+		   {*在一个语法分析子程序的出口处调用test进行合法后继符号的判断，合法的后继符号有状态起始符，标识符，以及另一个子程序。*}
+                 test( statbegsys+[ident,procsym],fsys,6){*}
                end
           else error(5)
         end;
@@ -747,6 +763,7 @@ begin { main }
   reset(fin);
   for ch := 'A' to ';' do
     ssym[ch] := nul;
+{*13个保留字，用于二分查找，所以是按序排列的*}
   word[1] := 'begin        '; word[2] := 'call         ';
   word[3] := 'const        '; word[4] := 'do           ';
   word[5] := 'end          '; word[6] := 'if           ';
@@ -755,6 +772,7 @@ begin { main }
   word[11]:= 'var          '; word[12]:= 'while        ';
   word[13]:= 'write        ';
   
+{*保留字对应的13个symbol*}
   wsym[1] := beginsym;      wsym[2] := callsym;
   wsym[3] := constsym;      wsym[4] := dosym;
   wsym[5] := endsym;        wsym[6] := ifsym;
@@ -763,6 +781,7 @@ begin { main }
   wsym[11]:= varsym;        wsym[12]:= whilesym;
   wsym[13]:= writesym;
   
+{*操作符集合，但是ssym['<']和ssym['>']没有必要设置，前面没有使用到这个数组来赋值*}
   ssym['+'] := plus;        ssym['-'] := minus;
   ssym['*'] := times;       ssym['/'] := slash;
   ssym['('] := lparen;      ssym[')'] := rparen;
@@ -771,28 +790,31 @@ begin { main }
   ssym['<'] := lss;         ssym['>'] := gtr;
   ssym[';'] := semicolon;
   
+{*mnemonic是汇编指令，在前面被定义为枚举类型下标的数组*}
   mnemonic[lit] := 'LIT  '; mnemonic[opr] := 'OPR  ';
   mnemonic[lod] := 'LOD  '; mnemonic[sto] := 'STO  ';
   mnemonic[cal] := 'CAL  '; mnemonic[int] := 'INT  ';
   mnemonic[jmp] := 'JMP  '; mnemonic[jpc] := 'JPC  ';
   mnemonic[red] := 'RED  '; mnemonic[wrt] := 'WRT  ';
   
+  {*声明符号*}
   declbegsys := [ constsym, varsym, procsym ];
+  {*控制结构状态符号*}
   statbegsys := [ beginsym, callsym, ifsym, whilesym];
   facbegsys := [ ident, number, lparen ];
-  err := 0;
-  cc := 0;
-  cx := 0;
-  ll := 0;
-  ch := ' ';
-  kk := al;
-  getsym;
-  block( 0,0,[period]+declbegsys+statbegsys );
-  if sym <> period
+  err := 0;{*重置错误计数器*}
+  cc := 0;{*重置指针位置*}
+  cx := 0;{*重置code数组中的指令下标指示*}
+  ll := 0;{*重置单行长度计数器*}
+  ch := ' ';{*初始化读入的最后一个字符*}
+  kk := al;{*如果上一个标识符的长度比这个标识符长，就要把这个标识符后面的那些上一个残留的字符清除掉*}
+  getsym;{*读入一个单词，如果是标识符或保留字则读入a数组，如果是纯数字，数字将存在num中，如果是其他symbol，则将存在sym中*}
+  block( 0,0,[period]+declbegsys+statbegsys );{*开始读取主程序代码*}
+  if sym <> period{*如果读取主程序结束后最后一个单词不是.的话说明程序不是以.结尾，抛出9号错误*}
   then error(9);
   if err = 0
-  then interpret
-  else write('ERRORS IN PL/0 PROGRAM');
+  then interpret{*如果编译没有出错的话，就开始执行P-code？*}
+  else write('ERRORS IN PL/0 PROGRAM');{*否则就输出在程序中存在错误*}
   writeln;
   close(fin)
 end.  
