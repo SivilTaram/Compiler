@@ -5,9 +5,9 @@ const norw = 13;          { no. of reserved words }{保留字的数量}
       txmax = 100;        { length of identifier table }{标识符表的长度}
       nmax = 14;          { max. no. of digits in numbers }{数字最大长度}
       al = 10;            { length of identifiers }{*标识符的数量*}
-      amax = 2047;        { maximum address }{* 地址最大范围*}
-      levmax = 3;         { maximum depth of block nesting }[FIXME]{* 最大嵌套层次？ *}
-      cxmax = 200;        { size of code array }
+      amax = 2047;        { maximum address }{*这个不是最大地址吧...明明是最大的值...*}
+      levmax = 3;         { maximum depth of block nesting }{* 最大嵌套层次 *}
+      cxmax = 200;        { size of code array }{*指令数组一次存储最大的指令数*}
 {* 查询资料得知，()是子界类型，类似于java和C#里的枚举类，以下为查找的一个示例：
 type
 months = (Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec);  *}
@@ -23,8 +23,8 @@ type symbol =
      fct = ( lit,opr,lod,sto,cal,int,jmp,jpc,red,wrt ); { functions }{* 抽象机定义的10条汇编指令*}
      instruction = packed record {*record是记录类型，类似于C里结构体的感觉*}
                      f : fct;            { function code }{* 这个记录类型记录了目标代码集，层次域以及地址空间范围*}
-                     l : 0..levmax;      { level }
-                     a : 0..amax;        { displacement address }
+                     l : 0..levmax;      { level }{*指令嵌套层次*}
+                     a : 0..amax;        { displacement address }{*指令的参数！不是displacement address...*}
                    end;
                   {   lit 0, a : load constant a
                       opr 0, a : execute operation a
@@ -306,111 +306,112 @@ procedure block( lev,tx : integer; fsys : symset ); { P386 }
     var i : integer;
     begin
 
-      for i := cx0 to cx-1 do
+      for i := cx0 to cx-1 do{*cx0是本段代码对应指令的起始位置*}
         with code[i] do
-          writeln( i:4, mnemonic[f]:7,l:3, a:5)
+          writeln( i:4, mnemonic[f]:7,l:3, a:5){*输出地址，指令名称与其参数的值*}
     end; { listcode }
     
+{*分程序主体代码解析*}
   procedure statement( fsys : symset ); { P387 }
     var i,cx1,cx2: integer;
     procedure expression( fsys: symset); {P387 }
       var addop : symbol;
       procedure term( fsys : symset);  { P387 }
         var mulop: symbol ;
-        procedure factor( fsys : symset ); { P387 }
+        procedure factor( fsys : symset ); { P387 }{*因子解析*}
           var i : integer;
           begin
-            test( facbegsys, fsys, 24 );
-            while sym in facbegsys do
+            test( facbegsys, fsys, 24 );{*在因子语法解析的入口处设置test进行检测和跳读*}
+            while sym in facbegsys do{*facbegsys是factor的合法符号开始集，设置循环是为了将一些特殊的出错情况可以跳读过*}
               begin
                 if sym = ident
                 then begin
-                       i := position(id);
+                       i := position(id);{*查询标识符在符号表中的位置*}
                        if i= 0
-                       then error(11)
+                       then error(11){*如果标识符在符号表中找不到*}
                        else
                          with table[i] do
                            case kind of
-                             constant : gen(lit,0,val);
-                             variable : gen(lod,lev-level,adr);
-                             prosedure: error(21)
+                             constant : gen(lit,0,val);{*如果是常量的话，取常量val放到数据栈栈顶*}
+                             variable : gen(lod,lev-level,adr);{*如果是变量的话，取变量放到数据栈栈顶*}
+                             prosedure: error(21){*如果在因子分析中发现是个proc，则报错：表达式内不能有过程标识符*}
                            end;
                        getsym
                      end
-                else if sym = number
+                else if sym = number{*如果识别到是个数字*}
                      then begin
-                            if num > amax
+                            if num > amax{*判断数字是否大于amx，数字不超过2047（感觉为啥这么逗。。不能超过2047是为啥）*}
                             then begin
                                    error(30);
                                    num := 0
                                  end;
-                            gen(lit,0,num);
+                            gen(lit,0,num);{*将num常量存到数据栈栈顶*}
                             getsym
                           end
-                     else if sym = lparen
+                     else if sym = lparen{*如果是个左括号，表明因子是个表达式*}
                           then begin
                                  getsym;
-                                 expression([rparen]+fsys);
-                                 if sym = rparen
+                                 expression([rparen]+fsys);{*左括号是表达式的开始，就进入表达式的分析成分*}
+                                 if sym = rparen{*出表达式后判断是否是右括号，右括号即匹配成功*}
                                  then getsym
-                                 else error(22)
+                                 else error(22){*否则抛出22号错误，没写右括号，括号不匹配*}
                                end;
-                test(fsys,[lparen],23)
+                test(fsys,[lparen],23){*在因子分析完成后进行检测与跳读操作，终止符号集为下一个因子的左括号开始？*}
               end
           end; { factor }
-        begin { procedure term( fsys : symset);   P388
+        begin { procedure term( fsys : symset);{*Term的项读取分析*}
                 var mulop: symbol ;    }
-          factor( fsys+[times,slash]);
+          factor( fsys+[times,slash]);{*slash是'/'，是除法号*}
           while sym in [times,slash] do
             begin
-              mulop := sym;
+              mulop := sym;{*记录sym以在后面进行选择*}
               getsym;
-              factor( fsys+[times,slash] );
+              factor( fsys+[times,slash] );{*乘除法作为有效符号集*}
               if mulop = times
-              then gen( opr,0,4 )
-              else gen( opr,0,5)
+              then gen( opr,0,4 ){*如果是乘法，则生成参数为4的opr指令*}
+              else gen( opr,0,5){*如果是除法，则生成参数为5的opr指令*}
             end
-        end; { term }
-      begin { procedure expression( fsys: symset);  P388
+        end; { term }{*term的读取结束*}
+      begin { procedure expression( fsys: symset);{*expression表达式分析语句部分*}
               var addop : symbol; }
         if sym in [plus, minus]
         then begin
-               addop := sym;
+               addop := sym;{*sym的值赋值给addop，像上面那个multop一样*}
                getsym;
-               term( fsys+[plus,minus]);
+               term( fsys+[plus,minus]);{*term分析子表达式*}
                if addop = minus
-               then gen(opr,0,1)
+               then gen(opr,0,1){*如果是负数，则生成参数为0的opr指令，但是奇怪的是，为什么这时候没有先把0加载至栈顶？*}
              end
-        else term( fsys+[plus,minus]);
-        while sym in [plus,minus] do
+        else term( fsys+[plus,minus]);{如果sym不在+或-之间，则直接使用term直接分析其结构*}
+        while sym in [plus,minus] do{*当sym一直都是-或者+时*}
           begin
             addop := sym;
             getsym;
-            term( fsys+[plus,minus] );
+            term( fsys+[plus,minus] );{*为什么这里要写一个循环来判断呢？*}
             if addop = plus
             then gen( opr,0,2)
             else gen( opr,0,3)
           end
       end; { expression }
       
-    procedure condition( fsys : symset ); { P388 }
+    procedure condition( fsys : symset ); {*条件判断语句*}
       var relop : symbol;
       begin
-        if sym = oddsym
+        if sym = oddsym{*判断sym是否为保留字odd*}
         then begin
                getsym;
                expression(fsys);
-               gen(opr,0,6)
+               gen(opr,0,6){*如果是保留字odd的话则生成指令参数为6的opr指令*}
              end
         else begin
-               expression( [eql,neq,lss,gtr,leq,geq]+fsys);
-               if not( sym in [eql,neq,lss,leq,gtr,geq])
+               expression( [eql,neq,lss,gtr,leq,geq]+fsys);{*否则就一定在剩下的操作符集合中*}
+               if not( sym in [eql,neq,lss,leq,gtr,geq]){*如果sym不在制定的操作符集合中，则报错*}
                then error(20)
                else begin
-                      relop := sym;
+                      relop := sym;{*将sym读入到relop中等待判断*}
                       getsym;
                       expression(fsys);
-                      case relop of
+                      case relop of{*relop可能有六种类型，分别生成不同参数的opr指令*}
                         eql : gen(opr,0,8);
                         neq : gen(opr,0,9);
                         lss : gen(opr,0,10);
@@ -420,106 +421,107 @@ procedure block( lev,tx : integer; fsys : symset ); { P386 }
                       end
                     end
              end
-      end; { condition }
-    begin { procedure statement( fsys : symset );  P389
+      end; { condition }{*条件判断语句结束*}
+    begin { procedure statement( fsys : symset ); {*语句主体分析部分开始*}
             var i,cx1,cx2: integer; }
-      if sym = ident
+      if sym = ident{*如果sym是一个标识符的话*}
       then begin
-             i := position(id);
+             i := position(id);{*查询其在符号表中的位置，如果没有找到则抛出11号错误*}
              if i= 0
              then error(11)
-             else if table[i].kind <> variable
+             else if table[i].kind <> variable{*如果类型和符号表中的类型不匹配，则报12号错误*}
                   then begin { giving value to non-variation }
                          error(12);
                          i := 0
                        end;
              getsym;
-             if sym = becomes
+             if sym = becomes{*如果标识符后读入的是一个：=号*}
              then getsym
-             else error(13);
-             expression(fsys);
+             else error(13);{*再读入一个符号后报错为13号错误*}
+             expression(fsys);{*以表达式的格式来读取*}
              if i <> 0
              then
                with table[i] do
-                 gen(sto,lev-level,adr)
+                 gen(sto,lev-level,adr){*如果i不等於0，说明查到了，这时将变量的地址与层次关系压入栈顶*}
            end
-      else if sym = callsym
+      else if sym = callsym{*如果是call*}
       then begin
              getsym;
-             if sym <> ident
+             if sym <> ident{*call后面如果不是一个标识符则报错*}
              then error(14)
              else begin
-                    i := position(id);
+                    i := position(id);{*否则找到id对应的符号表中的位置*}
                     if i = 0
                     then error(11)
                     else
                       with table[i] do
-                        if kind = prosedure
-                        then gen(cal,lev-level,adr)
+                        if kind = prosedure{*如果判断符号表中是程序标识符的话，则*}
+                        then gen(cal,lev-level,adr){*生成一条cal指令，参数为所在的层级以及指令所在的地址*}
                         else error(15);
                     getsym
                   end
            end
-      else if sym = ifsym
+      else if sym = ifsym{*如果是if语句*}
            then begin
+		    {*if expression then statement else statement*}
                   getsym;
-                  condition([thensym,dosym]+fsys);
-                  if sym = thensym
+                  condition([thensym,dosym]+fsys);{*使用condition分析 if 后的表达式*}
+                  if sym = thensym{*如果if之后陈述已经结束，那么应该是then*}
                   then getsym
                   else error(16);
                   cx1 := cx;
-                  gen(jpc,0,0);
-                  statement(fsys);
+                  gen(jpc,0,0);{*生成一条jpc指令，暂时不填跳转地址*}
+                  statement(fsys);{*分析语句*}
                   code[cx1].a := cx
                 end
            else if sym = beginsym
                 then begin
                        getsym;
-                       statement([semicolon,endsym]+fsys);
+                       statement([semicolon,endsym]+fsys);{*如果是begin开始的保留字符号，则分析begin后面的陈述句*}
                        while sym in ([semicolon]+statbegsys) do
                          begin
-                           if sym = semicolon
+                           if sym = semicolon{*semicolon是终结符号"."*}
                            then getsym
                            else error(10);
                            statement([semicolon,endsym]+fsys)
                          end;
-                       if sym = endsym
+                       if sym = endsym{*如果sysm是end保留字符号*}
                        then getsym
-                       else error(17)
+                       else error(17){*则抛出异常号，号为17[FIXME]这里为啥要抛出啊？*}
                      end
-                else if sym = whilesym
+                else if sym = whilesym{*当读到while符号时*}
                      then begin
                             cx1 := cx;
                             getsym;
                             condition([dosym]+fsys);
                             cx2 := cx;
-                            gen(jpc,0,0);
+                            gen(jpc,0,0);{*生成jpc代码，之后会回来返填*}
                             if sym = dosym
                             then getsym
                             else error(18);
-                            statement(fsys);
-                            gen(jmp,0,cx1);
+                            statement(fsys);{*将第一个
+                            gen(jmp,0,cx1);{*生成一条跳转到cx1的jmp的指令*}
                             code[cx2].a := cx
                           end
-                     else if sym = readsym
+                     else if sym = readsym{*如果是读符号保留字*}
                           then begin
                                  getsym;
-                                 if sym = lparen
+                                 if sym = lparen{*如果读入的第一个符号是左括号时*}
                                  then
                                    repeat
                                      getsym;
-                                     if sym = ident
+                                     if sym = ident{*则开始循环读入标识符*}
                                      then begin
-                                            i := position(id);
+                                            i := position(id);{*寻找符号表中的位置*}
                                             if i = 0
                                             then error(11)
-                                            else if table[i].kind <> variable
+                                            else if table[i].kind <> variable{*如果符号表中的类型和标识符的类型是不一样的*}
                                                  then begin
-                                                        error(12);
+                                                        error(12);{*报错，错误号为12*}
                                                         i := 0
                                                       end
                                                  else with table[i] do
-                                                        gen(red,lev-level,adr)
+                                                        gen(red,lev-level,adr){*如果正确的话
                                           end
                                      else error(4);
                                      getsym;
@@ -529,17 +531,17 @@ procedure block( lev,tx : integer; fsys : symset ); { P386 }
                                  then error(22);
                                  getsym
                                end
-                          else if sym = writesym
+                          else if sym = writesym{*当读取到的符号是写符号时*}
                                then begin
                                       getsym;
-                                      if sym = lparen
+                                      if sym = lparen{*如果读取到的符号是左括号*}
                                       then begin
                                              repeat
                                                getsym;
-                                               expression([rparen,comma]+fsys);
+                                               expression([rparen,comma]+fsys);{*利用expression表达式进行语法分析*}
                                                gen(wrt,0,0);
-                                             until sym <> comma;
-                                             if sym <> rparen
+                                             until sym <> comma;{*直到sym不是逗号为止*}
+                                             if sym <> rparen{*如果sym不是右括号—结束符时，报错22号*}
                                              then error(22);
                                              getsym
                                            end
@@ -616,135 +618,137 @@ a ,b : real;
           then begin
                  getsym;
 		   {*在一个语法分析子程序的出口处调用test进行合法后继符号的判断，合法的后继符号有状态起始符，标识符，以及另一个子程序。*}
-                 test( statbegsys+[ident,procsym],fsys,6){*}
+                 test( statbegsys+[ident,procsym],fsys,6){*这里的fsys是符号集吗？有什么特殊的用处吗？...奇怪>.<[FIXME]*}
                end
           else error(5)
         end;
-      test( statbegsys+[ident],declbegsys,7)
-    until not ( sym in declbegsys );
-    code[table[tx0].adr].a := cx;  { back enter statement code's start adr. }
+      test( statbegsys+[ident],declbegsys,7){*在非最后一个语法分析子程序的后面进行合法后继符号判断*}
+    until not ( sym in declbegsys );{*如果sym不是合法后继集合，则退出*}
+    code[table[tx0].adr].a := cx;  { back enter statement code's start adr. }{*返填过程开头处的地址，一开始有一个gen(jmp,0,0)，用于跳到本处开始执行语句的开始*}
     with table[tx0] do
       begin
-        adr := cx; { code's start address }
+        adr := cx; { code's start address }{*生成的指令的地址*}
       end;
-    cx0 := cx;
-    gen(int,0,dx); { topstack point to operation area }
-    statement( [semicolon,endsym]+fsys);
-    gen(opr,0,0); { return }
-    test( fsys, [],8 );
-    listcode;
+    cx0 := cx;{**}
+    gen(int,0,dx); { topstack point to operation area }{*T寄存器的数增加dx*}
+    statement( [semicolon,endsym]+fsys);{*函数主体部分解析*}
+    gen(opr,0,0); { return }{*返回地址*}
+    test( fsys, [],8 );{}
+    listcode;{*打印与本段分程序执行内容有关的指令码，}
   end { block };
   
+{*解释执行P-code指令清单*}
 procedure interpret;  { P391 }
   const stacksize = 500;
-  var p,b,t: integer; { program-,base-,topstack-register }
-      i : instruction;{ instruction register }
-      s : array[1..stacksize] of integer; { data store }
-  function base( l : integer ): integer;
+  var p,b,t: integer; { program-,base-,topstack-register }{*程序，基址，栈顶寄存器*}
+      i : instruction;{ instruction register }{*指令寄存器*}
+      s : array[1..stacksize] of integer; { data store }{*栈的深度*}
+  function base( l : integer ): integer;{*通过静态链求出数据区的基地址*}
     var b1 : integer;
+{*使用静态链SL进行逐层寻找基址*}
     begin { find base l levels down }
-      b1 := b;
-      while l > 0 do
+      b1 := b;{*b是取当前基址*}
+      while l > 0 do{*层次大于0就循环*}
         begin
-          b1 := s[b1];
-          l := l-1
+          b1 := s[b1];{*取上一层的层基址*}
+          l := l-1{*层次减1*}
         end;
-      base := b1
+      base := b1{*返回最后找到的基址*}
     end; { base }
   begin  { P392 }
     writeln( 'START PL/0' );
     t := 0;
     b := 1;
     p := 0;
-    s[1] := 0;
-    s[2] := 0;
-    s[3] := 0;
+    s[1] := 0;{*静态链的位置*}
+    s[2] := 0;{*动态链的位置*}
+    s[3] := 0;{*函数的返回地址存放位置*}
     repeat
-      i := code[p];
-      p := p+1;
+      i := code[p];{*从指令数组中取出一条指令为i*}
+      p := p+1;{*指令指针+1*}
       with i do
         case f of
-          lit : begin
+          lit : begin{*当指令是lit时，先+1，然后将栈顶赋值为a*}
                   t := t+1;
                   s[t]:= a;
                 end;
           opr : case a of { operator }
-                  0 : begin { return }
+                  0 : begin { return }{*返回指令*}
                         t := b-1;
-                        p := s[t+3];
+                        p := s[t+3];{*
                         b := s[t+2];
                       end;
-                  1 : s[t] := -s[t];
-                  2 : begin
+                  1 : s[t] := -s[t];{*取反操作*}
+                  2 : begin{*栈顶退格，将原栈顶的原次栈顶的数想加，放入新栈顶地址中*}
                         t := t-1;
                         s[t] := s[t]+s[t+1]
                       end;
-                  3 : begin
+                  3 : begin{*栈顶退格，次栈顶减去原栈顶的值，赋值给新栈顶*}
                         t := t-1;
                         s[t] := s[t]-s[t+1]
                       end;
-                  4 : begin
+                  4 : begin{*栈顶退格，新栈顶的值等于原栈顶与原次栈顶的乘积*}
                         t := t-1;
                         s[t] := s[t]*s[t+1]
                       end;
-                  5 : begin
+                  5 : begin{*栈顶退格，新栈顶的值等于原栈顶与原次栈顶的除*}
                         t := t-1;
                         s[t] := s[t]div s[t+1]
                       end;
-                  6 : s[t] := ord(odd(s[t]));
-                  8 : begin
+                  6 : s[t] := ord(odd(s[t]));{*把odd(s[t])的结果放到栈顶*}
+                  8 : begin{*把odd(s[t])的结果放到栈顶*}
                         t := t-1;
                         s[t] := ord(s[t]=s[t+1])
                       end;
-                  9 : begin
+                  9 : begin{*把s[t]!=s[t+1]的结果放到栈顶*}
                         t := t-1;
                         s[t] := ord(s[t]<>s[t+1])
                       end;
-                  10: begin
+                  10: begin{*把s[t]<s[t+1]的结果放到栈顶*}
                         t := t-1;
                         s[t] := ord(s[t]< s[t+1])
                       end;
-                  11: begin
+                  11: begin{*把s[t]>=s[t+1]的结果放到栈顶*}
                         t := t-1;
                         s[t] := ord(s[t] >= s[t+1])
                       end;
-                  12: begin
+                  12: begin{*把s[t]>s[t+1]的结果放到栈顶*}
                         t := t-1;
                         s[t] := ord(s[t] > s[t+1])
                       end;
-                  13: begin
+                  13: begin{*把s[t]<=s[t+1]的结果放到栈顶*}
                         t := t-1;
                         s[t] := ord(s[t] <= s[t+1])
                       end;
                 end;
-          lod : begin
+          lod : begin{*取变量（相对地址为a，层次差为l）放到数据栈的栈顶*}
                   t := t+1;
                   s[t] := s[base(l)+a]
                 end;
-          sto : begin
+          sto : begin{*将数据栈栈顶内容存入变量（相对地址为a，层次差为l）*}
                   s[base(l)+a] := s[t];  { writeln(s[t]); }
                   t := t-1
                 end;
-          cal : begin  { generate new block mark }
+          cal : begin  { generate new block mark }{*在调用一个过程时，入口地址为a，层次差为l，要将SL(base(l))，DL(b)，RA(p)栈顶地址压入栈内*}
                   s[t+1] := base(l);
                   s[t+2] := b;
                   s[t+3] := p;
-                  b := t+1;
+                  b := t+1;{*t+1*}
                   p := a;
                 end;
-          int : t := t+a;
-          jmp : p := a;
+          int : t := t+a;{*数据栈栈顶指针增加a*}
+          jmp : p := a;{*无条件跳转到a地址*}
           jpc : begin
                   if s[t] = 0
-                  then p := a;
+                  then p := a;{*如果栈顶的值为0，则跳转到a，否则不跳转*}
                   t := t-1;
                 end;
           red : begin
-                  writeln('??:');
-                  readln(s[base(l)+a]);
+                  writeln('??:');{*这是啥...*}
+                  readln(s[base(l)+a]);{*读数据并存入变量*}
                 end;
           wrt : begin
-                  writeln(s[t]);
+                  writeln(s[t]);{*将栈顶的内容输出*}
                   t := t+1
                 end
         end { with,case }
