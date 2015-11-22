@@ -17,9 +17,9 @@ enum Symbol {
 	nullsym,/* not any one */
 
 	ident, /* ab */
-	number,/* '123' */
-	charconst/* */,
-	strconst/* */,
+	number,/* 123 */
+	charconst/* 'a' */,
+	strconst/* "absdas" */,
 
 	/* operator */
 	minus,/* '-' */
@@ -40,7 +40,7 @@ enum Symbol {
 	semicolon/*';'*/, 
 	period/*'.'*/, 
 	becomes/*':='*/, 
-	colon,/*':'*/
+	colon,//:
 	quote,/* ' */
 
 	/* statment */
@@ -55,8 +55,9 @@ enum Symbol {
 	downtosym, 
 	tosym,
 
-	/* declaretion */
-	constsym, 
+	// 'a'
+	constsym,
+	// var
 	varsym, 
 	procsym, 
 	funcsym,
@@ -71,20 +72,6 @@ enum Symbol {
 
 	/* The end of the file */
 	eofsym
-};
-
-enum TokenObj {
-	constobj,
-	varobj,
-	procobj,
-	funcobj
-};
-
-enum TokenType {
-	inttyp,
-	chartyp,
-	arraytyp,
-	notyp
 };
 
 class Token {

@@ -18,6 +18,21 @@ public:
 
 };
 
+
+enum TokenObj {
+	constobj,
+	varobj,
+	procobj,
+	funcobj
+};
+
+enum TokenType {
+	inttyp,
+	chartyp,
+	arraytyp,
+	notyp
+};
+
 class SymbolSet {
 public:
 	vector<SymbolItem> table;

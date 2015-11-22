@@ -28,6 +28,9 @@ public:
 	void constDef();
 	//Handle var declaration
 	void variableDec();
+	void variableDef();
+	//Fill the symbol set with the type of var.
+	void varType(queue<string>* var_name);
 	//Hanle procedure declaration
 	void procDec();
 	//Handle the list of params of procdure or function.
@@ -42,7 +45,6 @@ public:
 	void expression();
 	//Handle the index varaiable of array
 	void factor();
-	void term();
 	void selector();
 	//Handle the call of procedure and function
 	void profuncCall(string name);
@@ -56,7 +58,10 @@ public:
 	void compoundStatement();
 	//Handle the assign
 	void assignment(string name);
-
+	void readStatement();
+	void writeStatement();
+	void item();
+	//Item
 };
 /*
 <³ÌÐò>          :: =   <·Ö³ÌÐò>.
