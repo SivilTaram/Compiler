@@ -1,6 +1,8 @@
 #include "parser.h"
 #include "lexer.h"
 #include "error.h"
+#include <queue>
+
 #define DEBUG
 #define LineNo (current_token.getLineNo())
 #define PRINT(x) (cout << "Debug::" << x << endl)
@@ -111,17 +113,13 @@ void Parser::parser() {
 		Error::errorMessage(50,LineNo);
 }
 
-
-
 //skip some words until a valid follow set.
 void Parser::skip() {};
 //test whether the current_token is valid.
 void Parser::test() {};
 
-/*
-<常量说明部分> :: = const<常量定义>{,<常量定义>};
-*/
 //Handle const declaration
+//<常量说明部分> :: = const<常量定义>{,<常量定义>};
 void Parser::constDec() {
 #ifdef DEBUG
 	PRINT("const_Dec");
@@ -135,22 +133,109 @@ void Parser::constDec() {
 			{
 				next();
 			}
-			else {
+			else
 				break;
-			}
 		}
 		// except ";" here.
 		except(Symbol::semicolon);
 	}
 };
 
+//<常量定义> ::= <标识符>＝ <常量>
+//<常量>     ::= [+| -] <无符号整数>|<字符>
 void Parser::constDef() {
+#ifdef DEBUG
+	PRINT("const_def");
+#endif // DEBUG
 
+	// if there is a identiter.
+	if (match(Symbol::ident)) {
+		string ident_name = current_token.getName();
+		next();
+		if (match(Symbol::eql)) {
+			next();
+			bool minus = false;
+			if (match(Symbol::plus) || match(Symbol::minus)) {
+				if (match(Symbol::minus))
+					minus = true;
+				//get the value of number
+				except(Symbol::number);
+				int value = current_token.getValue();
+				if (minus)
+					value = -value;
+				//[FIXME]:enter the symbol set.
+			}
+			else if (match(Symbol::charconst)) {
+				//[FXIMe]:enter the symbol set.
+			}
+			else {
+				Error::errorMessage(16, LineNo);
+			}
+
+		}
+	}
 }
 
 //Handle var declaration
-void Parser::variableDec() {};
+// <变量说明部分>  :: = var <变量说明>; {<变量说明>; }
+void Parser::variableDec() {
+#ifdef DEBUG
+	PRINT("variable_Dec");
+#endif // DEBUG
+	while (1) {
+		if(match(Symbol::ident))
+			variableDef();
+		else
+		{
+			Error::errorMessage(17, LineNo);
+			next();
+		}
+		if (match(Symbol::ident))
+			continue;
+		else
+			break;
+		next();
+	}
+}
+
 //Hanle procedure and function declaration
+//<变量说明> ::= <标识符>{, <标识符>} : <类型>
+void Parser::variableDef() {
+#ifdef DEBUG
+	PRINT("var_def");
+#endif // DEBUG
+	queue<string> *var_name = new queue<string>();
+	while (1) {
+		if (match(Symbol::ident)) {
+			string ident_name = current_token.getName();
+			var_name->push(ident_name);
+		}
+		else {
+			Error::errorMessage(18, LineNo);
+		}
+		next();
+		// :
+		if (match(Symbol::comma))
+		{
+			next();
+		}
+		else
+			break;
+	}
+	if (match(Symbol::colon)) {
+		next();
+		varType(var_name);
+	}
+}
+
+//将var的具体类型填入到符号表中
+void Parser::varType(queue<string>* var_name) {
+#ifdef DEBUG
+	PRINT("var_type");
+#endif // DEBUG
+
+
+}
 
 /*
 <过程首部>   ::=   procedure<标识符>[<形式参数表>];
@@ -295,17 +380,106 @@ void Parser::statement() {
 		else
 			assignment(ident);
 	}
+	else if (match(Symbol::beginsym))
+		//Note!!! the compoundstatement read the begin as the first!
+		compoundStatement();
+	else if (match(Symbol::ifsym))
+		ifStatement();
+	else if (match(Symbol::dosym))
+		whileStatement();
+	else if (match(Symbol::forsym))
+		forStatement();
+	else if (match(Symbol::readsym))
+		readStatement();
+	else if (match(Symbol::writesym))
+		writeStatement();
+	// ;
+	else if (match(Symbol::semicolon) || match(Symbol::endsym))
+		;
+	else
+		//No.15 Unexpected word.
+		Error::errorMessage(15, LineNo);
 }
 //Handle expressions
-void Parser::expression() {}
+//<表达式> ::= [+|-]<项>{<加法运算符><项>}
+void Parser::expression() {
+#ifdef DEBUG
+	PRINT("expression");
+#endif // DEBUG
+	bool minus = false;
+	if (match(Symbol::plus) || match(Symbol::minus)){
+		//matching means there is minus number.
+		if (match(Symbol::minus))
+			minus = true;
+		next();
+	}
+	item();
+	////////////////////////////
+	//[FIXME]: symbolset      //
+	////////////////////////////
+	while (match(Symbol::plus) || match(Symbol::minus)) {
+		next();
+		item();
+	}
+}
 //Handle the index varaiable of array
-void Parser::factor() {}
-void Parser::term() {}
+//<因子> ::= <标识符>|<标识符>'['<表达式>']'|<无符号整数>| '('<表达式>')' | <函数调用语句>
+void Parser::factor(){
+#ifdef DEBUG
+	PRINT("factor");
+#endif // DEBUG
+
+	if (match(Symbol::ident)) {
+		next();
+		// array[2]
+		string ident_name = current_token.getName();
+		if (match(Symbol::lsquare))
+		{
+			next();
+			if (match(Symbol::rsquare))
+			{
+				//enter symbol.
+			}
+		}
+		// func()
+		else if (match(Symbol::lparen))
+		{
+			//call
+			profuncCall(ident_name);
+		}
+	}
+	else if (match(Symbol::number)) {
+
+	}
+	else if(match(Symbol::lparen)) {
+		next();
+		expression();
+	}
+	else {
+		Error::errorMessage(19, LineNo);
+	}
+}
+
 void Parser::selector() {}
+
+
 //Handle the call of procedure and function
-void Parser::profuncCall(string ident) {}
-//Handle the for statement 
-void Parser::forStatement() {}
+//<函数调用语句> ::= <标识符>'('[<实在参数表>]')'
+void Parser::profuncCall(string ident) {
+#ifdef DEBUG
+	PRINT("call_pro_func");
+#endif // DEBUG
+
+}
+//Handle the for statement
+//<for循环语句>      :: = for <标识符>  : = <表达式> （downto | to） <表达式> do <语句> //步长为1
+void Parser::forStatement() {
+	except(Symbol::forsym);
+	next();
+	if (match(Symbol::ident)) {
+
+	}
+}
 //Handle the while statement
 void Parser::whileStatement() {}
 //Handle the if statement;
@@ -343,5 +517,53 @@ void Parser::compoundStatement() {
 }
 //Handle the assign
 void Parser::assignment(string ident) {
+#ifdef DEBUG
+	PRINT("assignment");
+#endif // DEBUG
 
-};
+}
+
+//<项>::= <因子>{<乘法运算符><因子>}
+void Parser::item() {
+#ifdef DEBUG
+	PRINT("item");
+#endif // DEBUG
+	factor();
+	while (match(Symbol::times) || match(Symbol::slash)) {
+		factor();
+		next();
+	}
+}
+
+//<读语句> ::=  read'('<标识符>{,<标识符>}')'
+void Parser::readStatement() {
+#ifdef DEBUG
+	PRINT("read_statement");
+#endif // DEBUG
+	except(Symbol::readsym);
+	except(Symbol::lparen);
+	vector<string> args;
+	while (1) {
+		if (match(Symbol::ident)) {
+			string ident_name = current_token.getName();
+			args.push_back(ident_name);
+			next();
+		}
+		else
+			Error::errorMessage(19, LineNo);
+		if (match(Symbol::comma))
+			next();
+		else
+			break;
+	}
+	vector<string>::iterator it = args.begin();
+	//[FIXME] enter the symbol set.
+	while (it != args.end()) {
+
+	}
+	except(Symbol::rparen);
+}
+
+void Parser::writeStatement() {
+
+}
