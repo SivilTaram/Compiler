@@ -14,8 +14,12 @@ using namespace std;
 #define reserved_map map<string,Symbol>
 
 enum Symbol {
+	nullsym,/* not any one */
+
 	ident, /* ab */
 	number,/* '123' */
+	charconst/* */,
+	strconst/* */,
 
 	/* operator */
 	minus,/* '-' */
@@ -63,7 +67,10 @@ enum Symbol {
 
 	/* read & write syscall */
 	readsym, 
-	writesym
+	writesym,
+
+	/* The end of the file */
+	eofsym
 };
 
 enum TokenObj {
@@ -81,9 +88,19 @@ enum TokenType {
 };
 
 class Token {
-public:
+private:
 	Symbol type;
-
+	string ident_name;
+	int num_value;
+	//line_num for error message
+	int line_num;
+public:
+	Token(Symbol _type,int _line_num,string _ident_name = "", int _num_value = 0) :
+		type(_type), line_num(_line_num),ident_name(_ident_name), num_value(_num_value) {};
+	Symbol getType();
+	int getLineNo();
+	string getName();
+	int getValue();
 };
 
 

@@ -21,6 +21,5 @@ public:
 class SymbolSet {
 public:
 	vector<SymbolItem> table;
-	vector<
 };
 #endif
