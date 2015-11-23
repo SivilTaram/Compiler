@@ -466,7 +466,12 @@ void Parser::statement() {
 		writeStatement();
 	// ;
 	else if (match(Symbol::semicolon) || match(Symbol::endsym))
-		;
+	{
+#ifdef DEBUG
+		PRINT("blank statement");
+#endif // DEBUG
+			;
+	}
 	else
 		//No.15 Unexpected word.
 		Error::errorMessage(15, LineNo);
@@ -532,7 +537,7 @@ void Parser::factor(){
 		}
 	}
 	else if (match(Symbol::number)) {
-
+		next();
 	}
 	else if(match(Symbol::lparen)) {
 		next();
@@ -787,7 +792,7 @@ void Parser::compoundStatement() {
 		if (match(Symbol::eofsym)) {
 			//No.14 Unexcepted end of the file
 			Error::errorMessage(14, LineNo);
-			return;
+			throw eofexception();
 		}
 	}
 #ifdef DEBUG
@@ -804,23 +809,15 @@ void Parser::assignment(string ident) {
 	PRINT("assignment");
 #endif // DEBUG
 
-	if (match(Symbol::ident)) {
-		//find what the type of ident from symbol table.
+	if (match(Symbol::lsquare)) {
 		next();
-		// [
-		if (match(Symbol::lsquare)) {
-			next();
-			expression();
+		expression();
 			// ]
 			except(Symbol::rsquare);
-		}
-		// :=
-		except(Symbol::becomes);
-		expression();
 	}
-	else {
-		Error::errorMessage(29, LineNo);
-	}
+	// :=
+	except(Symbol::becomes);
+	expression();
 
 #ifdef DEBUG
 	level--;
