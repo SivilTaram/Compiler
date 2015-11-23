@@ -82,8 +82,8 @@ private:
 	//line_num for error message
 	int line_num;
 public:
-	Token(Symbol _type,int _line_num,string _ident_name = "", int _num_value = 0) :
-		type(_type), line_num(_line_num),ident_name(_ident_name), num_value(_num_value) {};
+	Token(Symbol _type,int _line_num,string _ident_name = "", int _num_value = 0);
+	Token() {}
 	Symbol getType();
 	int getLineNo();
 	string getName();

@@ -1,15 +1,21 @@
 #ifndef PARSER_H
 #define PARSER_H
 #include "token.h"
+#include "symbolset.h"
+#include "lexer.h"
+#include <queue>
+
+#define DEBUG
 
 class  Parser {
 private:
 	Token current_token;
 	Lexer token_lexer;
+	
 public:
 	Parser(string file_path) :token_lexer(file_path){};
 	bool match(Symbol sym);
-	bool next();
+	void next();
 	void parser();
 	//If the next symbol is equal to sym,then next;
 	//Else skip some words.
@@ -63,6 +69,10 @@ public:
 	void item();
 	//Item
 };
+
+class eofexception : public exception {
+};
+
 /*
 <程序>          :: =   <分程序>.
 <分程序>        ::=   [<常量说明部分>][<变量说明部分>]{[<过程说明部分>]| [<函数说明部分>]}<复合语句>

@@ -3,11 +3,15 @@
 #include "error.h"
 #include <queue>
 
-#define DEBUG
 #define LineNo (current_token.getLineNo())
-#define PRINT(x) (cout << "Debug::" << x << endl)
+#define PRINT(x) cout << LineNo <<" :"; for(int i=0;i<level;i++){cout<< "     ";} cout << x << endl
 //#define DEBUG_NEXT
 using namespace std;
+
+#ifdef DEBUG
+int level = 0;
+#endif // DEBUG
+
 
 void Parser::except(Symbol sym) {
 	if (match(sym)) {
@@ -29,14 +33,12 @@ bool Parser::match(Symbol sym) {
 
 //return false -> end.
 //return true -> next.
-bool Parser::next() {
+void Parser::next() throw(exception){
 	//Read s symbol.
 	current_token = token_lexer.getsym();
 	//if symbol is '.' or the eof of the file,then end.
-	if (current_token.getType() == Symbol::period || current_token.getType() == Symbol::eofsym)
-		return false;
-	else
-		return true;
+	if (current_token.getType() == Symbol::eofsym)
+		throw eofexception();
 #ifdef DEBUG_NEXT
 	if (current_token.type==Symbol::charconst)
 		cout << "'" << current_token.ident_name << "'";
@@ -51,6 +53,22 @@ bool Parser::next() {
 #endif
 };
 
+//skip some words until a valid follow set.
+void Parser::skip() {};
+//test whether the current_token is valid.
+void Parser::test() {};
+
+/*
+Start parse.
+*/
+void Parser::parser() {
+	next();
+	block();
+	if (!match(Symbol::period))
+		//Number50: the program ended not normally
+		Error::errorMessage(50, LineNo);
+}
+
 /*
 block's parser.
 <分程序>        ::=   [<常量说明部分>][<变量说明部分>]{[<过程说明部分>]| [<函数说明部分>]}<复合语句>
@@ -62,67 +80,62 @@ block's parser.
 <函数说明部分> first set = {function}
 */
 void Parser::block() {
-	if (match(Symbol::constsym)) {
-		next();
-		constDec();
-	}
-	//[FIXME]:there is a conflution:
-	//const must be declared before var.
-	//but how can we control it?
-	if (match(Symbol::varsym))
-	{
-		next();
-		variableDec();
-	}
-	while (match(Symbol::procsym) || match(Symbol::funcsym))
-	{
-		//the first symbol of proc.
-		if (match(Symbol::procsym))
+#ifdef DEBUG
+	level++;
+	PRINT("block");
+#endif // DEBUG
+	try {
+		if (match(Symbol::constsym)) {
+			next();
+			constDec();
+		}
+		//[FIXME]:there is a conflution:
+		//const must be declared before var.
+		//but how can we control it?
+		if (match(Symbol::varsym))
 		{
-			//for some methods which appeared without essential,
-			//we must read the first word to confirm that they have
-			//appeared,but for those methods which appeared with essential,
-			//we must also read the first word for more accurate error message.
 			next();
-			//the loop is outside,and procDec can't have a loop.
-			procDec();
-			block();
-			except(Symbol::semicolon);
+			variableDec();
 		}
-		else {
-			next();
-			funcDec();
-			block();
-			except(Symbol::semicolon);
+		while (match(Symbol::procsym) || match(Symbol::funcsym))
+		{
+			//the first symbol of proc.
+			if (match(Symbol::procsym))
+			{
+				//for some methods which appeared without essential,
+				//we must read the first word to confirm that they have
+				//appeared,but for those methods which appeared with essential,
+				//we must also read the first word for more accurate error message.
+				next();
+				//the loop is outside,and procDec can't have a loop.
+				procDec();
+				block();
+				except(Symbol::semicolon);
+			}
+			else {
+				next();
+				funcDec();
+				block();
+				except(Symbol::semicolon);
+			}
 		}
+		compoundStatement();
 	}
-	compoundStatement();
-}
+	catch (eofexception) {
+		cout << "unexcepted file end." << endl;
+	}
+#ifdef DEBUG
+	level--;
+#endif // DEBUG
 
-/*
-Start parse.
-*/
-void Parser::parser() {
-	/*
-	get one sym
-	*/
-	next();
-	block();
-	if (!match(Symbol::period))
-		//Number50: the program ended not normally
-		Error::errorMessage(50,LineNo);
 }
-
-//skip some words until a valid follow set.
-void Parser::skip() {};
-//test whether the current_token is valid.
-void Parser::test() {};
 
 //Handle const declaration
 //<常量说明部分> :: = const<常量定义>{,<常量定义>};
 void Parser::constDec() {
 #ifdef DEBUG
-	PRINT("const_Dec");
+	level++;
+	PRINT("const Declaration");
 #endif // DEBUG
 	if (match(Symbol::ident))
 	{
@@ -139,13 +152,18 @@ void Parser::constDec() {
 		// except ";" here.
 		except(Symbol::semicolon);
 	}
+#ifdef DEBUG
+	level--;
+#endif // DEBUG
+
 };
 
 //<常量定义> ::= <标识符>＝ <常量>
 //<常量>     ::= [+| -] <无符号整数>|<字符>
 void Parser::constDef() {
 #ifdef DEBUG
-	PRINT("const_def");
+	level++;
+	PRINT("const Definition");
 #endif // DEBUG
 
 	// if there is a identiter.
@@ -174,13 +192,17 @@ void Parser::constDef() {
 
 		}
 	}
+#ifdef DEBUG
+	level--;
+#endif
 }
 
 //Handle var declaration
 // <变量说明部分>  :: = var <变量说明>; {<变量说明>; }
 void Parser::variableDec() {
 #ifdef DEBUG
-	PRINT("variable_Dec");
+	level++;
+	PRINT("variable Dec");
 #endif // DEBUG
 	while (1) {
 		if(match(Symbol::ident))
@@ -196,13 +218,17 @@ void Parser::variableDec() {
 			break;
 		next();
 	}
+#ifdef DEBUG
+	level--;
+#endif
 }
 
 //Hanle procedure and function declaration
 //<变量说明> ::= <标识符>{, <标识符>} : <类型>
 void Parser::variableDef() {
 #ifdef DEBUG
-	PRINT("var_def");
+	level++;
+	PRINT("variableDefinition");
 #endif // DEBUG
 	queue<string> *var_name = new queue<string>();
 	while (1) {
@@ -226,14 +252,21 @@ void Parser::variableDef() {
 		next();
 		varType(var_name);
 	}
+#ifdef DEBUG
+	level--;
+#endif
 }
 
 //将var的具体类型填入到符号表中
 void Parser::varType(queue<string>* var_name) {
 #ifdef DEBUG
-	PRINT("var_type");
+	level++;
+	PRINT("varType");
 #endif // DEBUG
 
+#ifdef DEBUG
+	level--;
+#endif // DEBUG
 
 }
 
@@ -243,7 +276,8 @@ void Parser::varType(queue<string>* var_name) {
 */
 void Parser::procDec() {
 #ifdef DEBUG
-	PRINT("proc_Dec");
+	level++;
+	PRINT("procedure Declaration");
 #endif // DEBUG
 
 	if (match(Symbol::ident))
@@ -273,13 +307,17 @@ void Parser::procDec() {
 		//No.11 should define identity at the first of proc.After procedure.
 		Error::errorMessage(11, LineNo);
 	}
+#ifdef DEBUG
+	level--;
+#endif
 };
 
 //Handle the parameterlist of function or procedure declaration.
 //<形式参数段> ::= [var]<标识符>{, <标识符>}: <基本类型>
 void Parser::parameterList() {
 #ifdef DEBUG
-	PRINT("parameter_List");
+	level++;
+	PRINT("parameter List");
 #endif // DEBUG
 
 	if (match(Symbol::varsym))
@@ -299,12 +337,17 @@ void Parser::parameterList() {
 	}
 	//basic type.
 	basicType();
+#ifdef DEBUG
+	level--;
+#endif // DEBUG
+
 }
 
 //<基本类型>  ::=  integer | char
 void Parser::basicType() {
 #ifdef DEBUG
-	PRINT("basic_Type");
+	level++;
+	PRINT("basic Type");
 #endif // DEBUG
 
 	if (match(Symbol::integersym) || match(Symbol::charsym))
@@ -315,13 +358,18 @@ void Parser::basicType() {
 		Error::errorMessage(12,LineNo);
 		next();
 	}
+#ifdef DEBUG
+	level--;
+#endif // DEBUG
+
 }
 
 //Handle funcDec
 //<函数首部> ::= function <标识符>[<形式参数表>]: <基本类型>;
 void Parser::funcDec() {
 #ifdef DEBUG
-	PRINT("func_Dec");
+	level++;
+	PRINT("function Declaration");
 #endif // DEBUG
 
 
@@ -360,13 +408,18 @@ void Parser::funcDec() {
 		//No.11 should define identity at the first of proc.After procedure.
 		Error::errorMessage(11, LineNo);
 	}
+
+#ifdef DEBUG
+	level--;
+#endif
 };
 
 //Handle statements
 //<语句> ::= <赋值语句>|<条件语句>|<当循环语句>|<过程调用语句>|<复合语句>|<读语句>|<写语句>|<for循环语句>|<空>
 void Parser::statement() {
 #ifdef DEBUG
-	PRINT("state_ment");
+	level++;
+	PRINT("statement");
 #endif // DEBUG
 
 	//assignment or proc or func
@@ -399,11 +452,16 @@ void Parser::statement() {
 	else
 		//No.15 Unexpected word.
 		Error::errorMessage(15, LineNo);
+#ifdef DEBUG
+	level--;
+#endif // DEBUG
+
 }
 //Handle expressions
 //<表达式> ::= [+|-]<项>{<加法运算符><项>}
 void Parser::expression() {
 #ifdef DEBUG
+	level++;
 	PRINT("expression");
 #endif // DEBUG
 	bool minus = false;
@@ -421,11 +479,16 @@ void Parser::expression() {
 		next();
 		item();
 	}
+#ifdef DEBUG
+	level--;
+#endif // DEBUG
+
 }
 //Handle the index varaiable of array
 //<因子> ::= <标识符>|<标识符>'['<表达式>']'|<无符号整数>| '('<表达式>')' | <函数调用语句>
 void Parser::factor(){
 #ifdef DEBUG
+	level++;
 	PRINT("factor");
 #endif // DEBUG
 
@@ -458,6 +521,10 @@ void Parser::factor(){
 	else {
 		Error::errorMessage(19, LineNo);
 	}
+#ifdef DEBUG
+	level--;
+#endif // DEBUG
+
 }
 
 void Parser::selector() {}
@@ -467,23 +534,54 @@ void Parser::selector() {}
 //<函数调用语句> ::= <标识符>'('[<实在参数表>]')'
 void Parser::profuncCall(string ident) {
 #ifdef DEBUG
-	PRINT("call_pro_func");
+	level++;
+	PRINT("call procedure or function");
+#endif // DEBUG
+
+#ifdef DEBUG
+	level--;
 #endif // DEBUG
 
 }
 //Handle the for statement
 //<for循环语句>      :: = for <标识符>  : = <表达式> （downto | to） <表达式> do <语句> //步长为1
 void Parser::forStatement() {
+#ifdef DEBUG
+	level++;
+	PRINT("for statement");
+#endif // DEBUG
+
 	except(Symbol::forsym);
 	next();
 	if (match(Symbol::ident)) {
 
 	}
+#ifdef DEBUG
+	level--;
+#endif // DEBUG
+
 }
 //Handle the while statement
-void Parser::whileStatement() {}
+void Parser::whileStatement() {
+#ifdef DEBUG
+	level++;
+	PRINT("while statement");
+#endif // DEBUG
+
+#ifdef DEBUG
+	level--;
+#endif // DEBUG
+
+}
 //Handle the if statement;
 void Parser::ifStatement() {
+#ifdef DEBUG
+	level++;
+	PRINT("if statement");
+#endif // DEBUG
+#ifdef DEBUG
+	level--;
+#endif // DEBUG
 
 }
 
@@ -491,7 +589,8 @@ void Parser::ifStatement() {
 // <复合语句>       ::=  begin<语句>{; <语句>}end
 void Parser::compoundStatement() {
 #ifdef DEBUG
-	PRINT("compound_Statement");
+	level++;
+	PRINT("compound Statement");
 #endif // DEBUG
 	except(Symbol::beginsym);
 	statement();
@@ -514,11 +613,19 @@ void Parser::compoundStatement() {
 			return;
 		}
 	}
+#ifdef DEBUG
+	level--;
+#endif // DEBUG
+
 }
 //Handle the assign
 void Parser::assignment(string ident) {
 #ifdef DEBUG
+	level++;
 	PRINT("assignment");
+#endif // DEBUG
+#ifdef DEBUG
+	level--;
 #endif // DEBUG
 
 }
@@ -526,6 +633,7 @@ void Parser::assignment(string ident) {
 //<项>::= <因子>{<乘法运算符><因子>}
 void Parser::item() {
 #ifdef DEBUG
+	level++;
 	PRINT("item");
 #endif // DEBUG
 	factor();
@@ -533,12 +641,17 @@ void Parser::item() {
 		factor();
 		next();
 	}
+#ifdef DEBUG
+	level--;
+#endif // DEBUG
+
 }
 
 //<读语句> ::=  read'('<标识符>{,<标识符>}')'
 void Parser::readStatement() {
 #ifdef DEBUG
-	PRINT("read_statement");
+	level++;
+	PRINT("read statement");
 #endif // DEBUG
 	except(Symbol::readsym);
 	except(Symbol::lparen);
@@ -562,8 +675,20 @@ void Parser::readStatement() {
 
 	}
 	except(Symbol::rparen);
+#ifdef DEBUG
+	level--;
+#endif // DEBUG
+
 }
 
 void Parser::writeStatement() {
+#ifdef DEBUG
+	level++;
+	PRINT("write statement");
+#endif // DEBUG
+
+#ifdef DEBUG
+	level--;
+#endif // DEBUG
 
 }

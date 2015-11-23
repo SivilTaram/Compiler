@@ -12,6 +12,24 @@
 
 using namespace std;
 
+
+enum TokenObj {
+	constobj,
+	varobj,
+	procobj,
+	funcobj,
+	paraobj,
+	paravarobj,
+	arrayobj
+};
+
+enum TokenType {
+	voidtyp,
+	inttyp,
+	chartyp,
+	notyp,
+};
+
 class SymbolItem {
 private:
 	string name;
@@ -23,6 +41,7 @@ private:
 	int link;
 	//for coude generation.Offset of base label.
 	int offset;
+	bool normal;
 public:
 	// get methods.
 	string getName() { return name; }
@@ -33,7 +52,7 @@ public:
 	int getLevel() { return level; }
 	int getOffset() { return offset; }
 	int getLink() { return link; }
-	SymbolItem(string _name,TokenObj _kind,TokenType _type,int _value):kind(_kind),value(_value),name(_name),type(_type){}
+	SymbolItem(string _name,TokenObj _kind,TokenType _type,int _value,int _level,int _link,bool _normal=false):kind(_kind),value(_value),name(_name),type(_type),level(_level),link(_link),normal(_normal){}
 	
 	string getKindName() {
 		switch (kind)
@@ -69,24 +88,6 @@ public:
 	void setLevel(int _level) { level = _level; }
 	void setOffset(int _offset) { offset = _offset; }
 	void setLink(int _link) { link = _link; }
-};
-
-
-enum TokenObj {
-	constobj,
-	varobj,
-	procobj,
-	funcobj,
-	paraobj,
-	paravarobj,
-	arrayobj
-};
-
-enum TokenType {
-	voidtyp,
-	inttyp,
-	chartyp,
-	notyp,
 };
 
 class SymbolPro {
@@ -128,12 +129,10 @@ private:
 	//if root,level = 0
 	int level;
 public:
-	SymbolSet(){}
-	int enter(SymbolItem item);
-	int locIdent(string name) {
-
-	}
-	TokenType findIdent(string name);
+	SymbolSet();
+	int enter(SymbolItem& item);
+	int locIdent(string name);
+	TokenType getType(string name);
 	//enter a procedure or function.
 	void enterproc(SymbolItem& _item,SymbolPro& _pro);
 	//exit a procedure or function.

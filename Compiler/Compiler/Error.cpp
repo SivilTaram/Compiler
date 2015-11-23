@@ -5,16 +5,15 @@ Error::Error() {
 };
 
 int Error::getErrorCount() {
-	return Error::error_count;
+	return error_count;
 };
 
-void Error::errorMessage(int errortype,int line,char invalid=' ') {
+void Error::errorMessage(int errortype,int line) {
 	string Message = "Line " + (line);
 	switch (errortype)
 	{
 	case 1:Message += "";
-	case 6:Message += "Invalid char"+invalid;
 	default:
 		break;
 	}
-};
+}

@@ -15,6 +15,9 @@ Lexer::Lexer(string filename) {
 	//Read from source code.
 	infile.open(filename);
 	initialReserved();
+	infile.getline(buf, 1024);
+	ll = strlen(buf);
+	cc = 0;
 	getch();
 };
 //Initial reserved_map;
@@ -68,7 +71,7 @@ void Lexer::getch() {
 	if (cc == ll) {
 		if (infile.eof())
 		{
-			cout << "The source code ended." << endl;
+			//cout << "The source code ended." << endl;
 			peek = EOF;
 			return;
 		}
@@ -101,15 +104,16 @@ Token Lexer::getsym() {
 		if (it != reserved.end())
 		{
 			sym = reserved[str];
+			token.clear();
 			return Token(sym,linenum);
 		}
 		else
 		{
 			sym = Symbol::ident;
 			string ident_name = str;
+			token.clear();
 			return Token(sym,linenum,ident_name);
 		}
-		token.clear();
 	}
 	//if 0 <= peek <= 9
 	else if (isdigit(peek)) {
@@ -126,6 +130,7 @@ Token Lexer::getsym() {
 			//calculate the value of number
 			for (vector<char>::iterator it = token.begin(); it != token.end(); it++)
 				val = 10 * val + (*it - '0');
+			token.clear();
 			return Token(Symbol::number,linenum,"", val);
 		}
 		token.clear();
@@ -179,13 +184,15 @@ Token Lexer::getsym() {
 		}
 		if (tmplinenum == linenum) {
 			string _ident_name(token.begin(), token.end());
+			token.clear();
 			sym = Symbol::strconst;
-			return Token(sym,linenum,_ident_name);
 			getch();
+			return Token(sym,linenum,_ident_name);
 		}
 		else
+		{
 			Error::errorMessage(3, linenum);
-		token.clear();
+		}
 	}
 	// ' ' const char.
 	else if (peek == '\'') {
@@ -200,7 +207,10 @@ Token Lexer::getsym() {
 			getch();
 		}
 		else
+		{
 			Error::errorMessage(4, linenum);
+			return Token(Symbol::nullsym, linenum);
+		}
 		token.clear();
 	}
 	else if (peek == EOF)
@@ -213,7 +223,7 @@ Token Lexer::getsym() {
 		map<string, Symbol>::iterator it = reserved.find(str);
 		if (it == reserved.end())
 		{
-			Error::errorMessage(6, linenum, peek);
+			Error::errorMessage(6, linenum);
 			sym = Symbol::nullsym;
 			getch();
 			return Token(sym,linenum);
