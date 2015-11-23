@@ -582,7 +582,7 @@ void Parser::statement() {
 		PRINT("blank statement");
 		level--;
 #endif // DEBUG
-		next();
+		;
 	}
 	else
 		//No.15 Unexpected word.
@@ -835,15 +835,18 @@ void Parser::ifStatement() {
 #endif // DEBUG
 	except(Symbol::ifsym);
 	condition();
-	except(Symbol::thensym);
+	if (match(Symbol::thensym)) {
+#ifdef DEBUG
+		PRINT("then");
+#endif // DEBUG
+		next();
+	}
 	statement();
-	next();
 	if (match(Symbol::elsesym))
 	{
 #ifdef DEBUG
-		PRINT("else statment");
+		PRINT("else");
 #endif // DEBUG
-
 		next();
 		statement();
 	}
@@ -890,15 +893,6 @@ void Parser::compoundStatement() {
 #endif // DEBUG
 	except(Symbol::beginsym);
 	statement();
-	if (match(Symbol::endsym))
-	{
-#ifdef DEBUG
-		PRINT("end");
-#endif // DEBUG
-
-		next();
-		return;
-	}
 	while (1) {
 		// except ';'
 		if (!match(Symbol::semicolon))
@@ -1029,6 +1023,7 @@ void Parser::writeStatement() {
 	}
 	else{
 		expression();
+		except(Symbol::rparen);
 	}
 
 #ifdef DEBUG
@@ -1036,25 +1031,3 @@ void Parser::writeStatement() {
 #endif // DEBUG
 
 }
-
-//<字符串> ::= "{十进制编码为32,33,35-126的ASCII字符}"
-//void Parser::stringDec() {
-//#ifdef DEBUG
-//	level++;
-//	PRINT("string Declaration");
-//#endif // DEBUG
-//
-//	if (match(Symbol::dquote)) {
-//		next();
-//	}
-//	else {
-//		Error::errorMessage(32, LineNo);
-//	}
-//
-//	except(Symbol::strconst);
-//	except(Symbol::dquote);
-//
-//#ifdef DEBUG
-//	level--;
-//#endif // DEBUG
-//}

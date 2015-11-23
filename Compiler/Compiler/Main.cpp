@@ -14,7 +14,17 @@ int main() {
 	//parser_for->parser();
 	//Parser* parser_if = new Parser("test/if.txt");
 	//parser_if->parser();
-	Parser* parser_write = new Parser("test/write.txt");
-	parser_write->parser();
+	//Parser* parser_if = new Parser("test/if_2.txt");
+	//parser_if->parser();
+	//Parser* parser_write = new Parser("test/write.txt");
+	//parser_write->parser();
+	//Parser* parser_read = new Parser("test/read.txt");
+	//parser_read->parser();
+	//Parser* parser_while = new Parser("test/while.txt");
+	//parser_while->parser();
+	//* parser_func = new Parser("test/function.txt");
+	//parser_func->parser();
+	Parser* parser_test= new Parser("test/13061193_test.txt");
+	parser_test->parser(); 
 	system("pause");
 }
