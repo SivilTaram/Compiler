@@ -40,8 +40,9 @@ enum Symbol {
 	semicolon/*';'*/, 
 	period/*'.'*/, 
 	becomes/*':='*/, 
-	colon,//:
+	colon,// :
 	quote,/* ' */
+	dquote,/* " */
 
 	/* statment */
 	beginsym, 

@@ -79,7 +79,6 @@ void Lexer::getch() {
 		ll = strlen(buf);
 		cc = 0;
 		linenum++;
-		cout << endl;
 		peek = ' ';
 	}
 	else {
@@ -124,6 +123,7 @@ Token Lexer::getsym() {
 		if (size(token) > NMAX)
 		{
 			Error::errorMessage(2, linenum);
+			token.clear();
 		}
 		else {
 			int val = 0;
@@ -133,7 +133,6 @@ Token Lexer::getsym() {
 			token.clear();
 			return Token(Symbol::number,linenum,"", val);
 		}
-		token.clear();
 	}
 	//colon
 	else if (peek == ':') {
@@ -187,7 +186,7 @@ Token Lexer::getsym() {
 			token.clear();
 			sym = Symbol::strconst;
 			getch();
-			return Token(sym,linenum,_ident_name);
+			return Token(sym,linenum,"\""+_ident_name+"\"");
 		}
 		else
 		{
@@ -197,21 +196,22 @@ Token Lexer::getsym() {
 	// ' ' const char.
 	else if (peek == '\'') {
 		getch();
-		char temp = peek;
+		string temp ="\'"+peek;
 		getch();
 		if (peek == '\'')
 		{
 			sym = Symbol::charconst;
-			string ident(1, temp);
-			return Token(sym,linenum,ident);
 			getch();
+			temp += "\'";
+			token.clear();
+			return Token(sym,linenum,temp);
 		}
 		else
 		{
+			token.clear();
 			Error::errorMessage(4, linenum);
 			return Token(Symbol::nullsym, linenum);
 		}
-		token.clear();
 	}
 	else if (peek == EOF)
 	{

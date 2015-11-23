@@ -3,8 +3,8 @@
 #include "error.h"
 #include <queue>
 
-#define LineNo (current_token.getLineNo())
-#define PRINT(x) cout << LineNo <<" :"; for(int i=0;i<level;i++){cout<< "     ";} cout << x << endl
+#define LineNo (current_token.getLineNo()+1)
+#define PRINT(x) cout << LineNo <<" :"; for(int i=0;i<level;i++){cout<< "- ";} cout << x << endl
 //#define DEBUG_NEXT
 using namespace std;
 
@@ -15,6 +15,104 @@ int level = 0;
 
 void Parser::except(Symbol sym) {
 	if (match(sym)) {
+#ifdef DEBUG_EXCEPT
+		switch (sym)
+		{
+		case nullsym:
+			PRINT("nullsym "); break;
+		case ident:
+			PRINT("ident " ); break;
+		case number:
+			PRINT("number " ); break;
+		case charconst:
+			PRINT("charconst " ); break;
+		case strconst:
+			PRINT("strconst " ); break;
+		case Symbol::minus:
+			PRINT("- " ); break;
+		case times:
+			PRINT("* " ); break;
+		case Symbol::plus:
+			PRINT("+ " ); break;
+		case slash:
+			PRINT("/ " ); break;
+		case eql:
+			PRINT("= " ); break;
+		case neq:
+			PRINT("!= " ); break;
+		case lss:
+			PRINT("< " ); break;
+		case leq:
+			PRINT("<= " ); break;
+		case gtr:
+			PRINT("> " ); break;
+		case geq:
+			PRINT(">= " ); break;
+		case lparen:
+			PRINT("( " ); break;
+		case rparen:
+			PRINT(") " ); break;
+		case lsquare:
+			PRINT("[ " ); break;
+		case rsquare:
+			PRINT("] " ); break;
+		case comma:
+			PRINT(", " ); break;
+		case semicolon:
+			PRINT("; " ); break;
+		case period:
+			PRINT(". " ); break;
+		case becomes:
+			PRINT(":= " ); break;
+		case colon:
+			PRINT(": " ); break;
+		case beginsym:
+			PRINT("begin " ); break;
+		case endsym:
+			PRINT("end " ); break;
+		case ifsym:
+			PRINT("if " ); break;
+		case thensym:
+			PRINT("then " ); break;
+		case elsesym:
+			PRINT("else " ); break;
+		case dosym:
+			PRINT("do " ); break;
+		case whilesym:
+			PRINT("while " ); break;
+		case forsym:
+			PRINT("for " ); break;
+		case downtosym:
+			PRINT("downto " ); break;
+		case tosym:
+			PRINT("to " ); break;
+		case constsym:
+			PRINT("const " ); break;
+		case varsym:
+			PRINT("var " ); break;
+		case procsym:
+			PRINT("procedure " ); break;
+		case funcsym:
+			PRINT("function " ); break;
+		case charsym:
+			PRINT("char " ); break;
+		case integersym:
+			PRINT("integer " ); break;
+		case arraysym:
+			PRINT("array " ); break;
+		case ofsym:
+			PRINT("of " ); break;
+		case readsym:
+			PRINT("read " ); break;
+		case writesym:
+			PRINT("write " ); break;
+		case eofsym:
+			PRINT("eof " ); break;
+		default:
+			break;
+		}
+#endif // DEBUG
+
 		next();
 	}
 	else {
@@ -67,6 +165,14 @@ void Parser::parser() {
 	if (!match(Symbol::period))
 		//Number50: the program ended not normally
 		Error::errorMessage(50, LineNo);
+	else {
+#ifdef DEBUG
+		level++;
+		PRINT("period");
+		level--;
+#endif // DEBUG
+
+	}
 }
 
 /*
@@ -385,14 +491,13 @@ void Parser::basicType() {
 //Handle funcDec
 //<函数首部> ::= function <标识符>[<形式参数表>]: <基本类型>;
 void Parser::funcDec() {
-#ifdef DEBUG
-	level++;
-	PRINT("function Declaration");
-#endif // DEBUG
-
-
 	if (match(Symbol::ident))
 	{
+#ifdef DEBUG
+		level++;
+		PRINT("function Declaration "+ current_token.getName());
+#endif // DEBUG
+
 		next();
 		// if parameter table's first is '(',then loop
 		// to map the parameter list.
@@ -412,8 +517,11 @@ void Parser::funcDec() {
 			}
 		}
 		//except : then basictype and then ;
-		if(match(Symbol::colon))
+		if (match(Symbol::colon))
+		{
+			next();
 			basicType();
+		}
 		else
 		{
 			//No.13 There 
@@ -446,8 +554,10 @@ void Parser::statement() {
 		next();
 		//proc or func there should be a paren
 		if (match(Symbol::lparen))
-			profuncCall(ident);
-		//or there should be a assign.
+		{
+			//[FIXME] realParameter. 
+			realParameter();
+		}//or there should be a assign.
 		else
 			assignment(ident);
 	}
@@ -468,9 +578,11 @@ void Parser::statement() {
 	else if (match(Symbol::semicolon) || match(Symbol::endsym))
 	{
 #ifdef DEBUG
+		level++;
 		PRINT("blank statement");
+		level--;
 #endif // DEBUG
-			;
+		next();
 	}
 	else
 		//No.15 Unexpected word.
@@ -523,17 +635,23 @@ void Parser::factor(){
 		string ident_name = current_token.getName();
 		if (match(Symbol::lsquare))
 		{
+			// [ 
 			next();
+			// 表达式
+			expression();
+			// ]
 			if (match(Symbol::rsquare))
 			{
 				//enter symbol.
+				next();
 			}
 		}
 		// func()
 		else if (match(Symbol::lparen))
 		{
 			//call
-			profuncCall(ident_name);
+			realParameter();
+			//profuncCall(ident_name);
 		}
 	}
 	else if (match(Symbol::number)) {
@@ -542,9 +660,11 @@ void Parser::factor(){
 	else if(match(Symbol::lparen)) {
 		next();
 		expression();
+		except(Symbol::rparen);
 	}
 	else {
 		Error::errorMessage(19, LineNo);
+		next();
 	}
 #ifdef DEBUG
 	level--;
@@ -589,28 +709,28 @@ void Parser::selector() {
 
 //Handle the call of procedure and function
 //<函数调用语句>  :: = <标识符>[<实在参数表>]
-void Parser::profuncCall(string ident) {
-#ifdef DEBUG
-	level++;
-	PRINT("call procedure or function");
-#endif // DEBUG
-
-	if (match(Symbol::ident)) {
-		next();
-	}
-	else {
-		Error::errorMessage(31, LineNo);
-		next();
-	}
-	// ( means there is a real parameter list.
-	if (match(Symbol::lparen)) {
-		realParameter();
-	}
-
-#ifdef DEBUG
-	level--;
-#endif // DEBUG
-}
+//void Parser::profuncCall(string ident) {
+//#ifdef DEBUG
+//	level++;
+//	PRINT("call procedure or function");
+//#endif // DEBUG
+//
+//	if (match(Symbol::ident)) {
+//		next();
+//	}
+//	else {
+//		Error::errorMessage(31, LineNo);
+//		next();
+//	}
+//	// ( means there is a real parameter list.
+//	if (match(Symbol::lparen)) {
+//		realParameter();
+//	}
+//
+//#ifdef DEBUG
+//	level--;
+//#endif // DEBUG
+//}
 
 //<实在参数表>    :: = '(' <实在参数> {, <实在参数>}')'
 //<实在参数>      :: = <表达式>
@@ -649,9 +769,8 @@ void Parser::forStatement() {
 #endif // DEBUG
 
 	except(Symbol::forsym);
-	next();
 	if (match(Symbol::ident)) {
-
+		next();
 	}
 	else {
 		Error::errorMessage(22,LineNo);
@@ -661,16 +780,14 @@ void Parser::forStatement() {
 	except(Symbol::becomes);
 
 	//expression
-	if (match(Symbol::plus) || match(Symbol::minus) || match(Symbol::ident)) {
-		expression();
-	}
-	else {
-		Error::errorMessage(23, LineNo);
-		//skip some thing until downto or to.
-		skip();
-	}
+	expression();
+
 	//downto | to
 	if (match(Symbol::downtosym) || match(Symbol::tosym)) {
+#ifdef DEBUG
+		PRINT("downto or to");
+#endif // DEBUG
+
 		next();
 	}
 	else {
@@ -679,14 +796,7 @@ void Parser::forStatement() {
 		next();
 	}
 	// expression
-	if (match(Symbol::plus) || match(Symbol::minus) || match(Symbol::ident)) {
-		expression();
-	}
-	else {
-		Error::errorMessage(23, LineNo);
-		//skip some thing until downto or to.
-		skip();
-	}
+	expression();
 	// do
 	except(Symbol::dosym);
 	// statement
@@ -730,6 +840,10 @@ void Parser::ifStatement() {
 	next();
 	if (match(Symbol::elsesym))
 	{
+#ifdef DEBUG
+		PRINT("else statment");
+#endif // DEBUG
+
 		next();
 		statement();
 	}
@@ -778,22 +892,30 @@ void Parser::compoundStatement() {
 	statement();
 	if (match(Symbol::endsym))
 	{
+#ifdef DEBUG
+		PRINT("end");
+#endif // DEBUG
+
 		next();
 		return;
 	}
 	while (1) {
 		// except ';'
-		except(Symbol::semicolon);
+		if (!match(Symbol::semicolon))
+			break;
+		next();
 		statement();
-		if (match(Symbol::endsym)) {
-			next();
-			return;
-		}
-		if (match(Symbol::eofsym)) {
-			//No.14 Unexcepted end of the file
-			Error::errorMessage(14, LineNo);
-			throw eofexception();
-		}
+	}
+	if (match(Symbol::endsym)) {
+#ifdef DEBUG
+		PRINT("end");
+#endif // DEBUG
+		next();
+	}
+	if (match(Symbol::eofsym)) {
+		//No.14 Unexcepted end of the file
+		Error::errorMessage(14, LineNo);
+		throw eofexception();
 	}
 #ifdef DEBUG
 	level--;
@@ -832,8 +954,8 @@ void Parser::item() {
 #endif // DEBUG
 	factor();
 	while (match(Symbol::times) || match(Symbol::slash)) {
-		factor();
 		next();
+		factor();
 	}
 #ifdef DEBUG
 	level--;
@@ -865,9 +987,9 @@ void Parser::readStatement() {
 	}
 	vector<string>::iterator it = args.begin();
 	//[FIXME] enter the symbol set.
-	while (it != args.end()) {
+	//while (it != args.end()) {
 
-	}
+	//}
 	except(Symbol::rparen);
 #ifdef DEBUG
 	level--;
@@ -875,14 +997,64 @@ void Parser::readStatement() {
 
 }
 
+//<写语句> :: = write'('<字符串>, <表达式>')' | write'('<字符串>')' | write'('<表达式>')'
 void Parser::writeStatement() {
 #ifdef DEBUG
 	level++;
 	PRINT("write statement");
 #endif // DEBUG
 
+	if (match(Symbol::writesym)) {
+		next();
+	}
+	else {
+		Error::errorMessage(31,LineNo);
+	}
+	except(Symbol::lparen);
+	// "
+	if (match(Symbol::strconst)) {
+#ifdef DEBUG
+		level++;
+		PRINT("str const");
+		level--;
+#endif // DEBUG
+
+		next();
+		if (match(Symbol::comma))
+		{
+			next();
+			expression();
+		}
+		except(Symbol::rparen);
+	}
+	else{
+		expression();
+	}
+
 #ifdef DEBUG
 	level--;
 #endif // DEBUG
 
 }
+
+//<字符串> ::= "{十进制编码为32,33,35-126的ASCII字符}"
+//void Parser::stringDec() {
+//#ifdef DEBUG
+//	level++;
+//	PRINT("string Declaration");
+//#endif // DEBUG
+//
+//	if (match(Symbol::dquote)) {
+//		next();
+//	}
+//	else {
+//		Error::errorMessage(32, LineNo);
+//	}
+//
+//	except(Symbol::strconst);
+//	except(Symbol::dquote);
+//
+//#ifdef DEBUG
+//	level--;
+//#endif // DEBUG
+//}
