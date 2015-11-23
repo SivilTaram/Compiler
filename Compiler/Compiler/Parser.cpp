@@ -176,18 +176,24 @@ void Parser::constDef() {
 			if (match(Symbol::plus) || match(Symbol::minus)) {
 				if (match(Symbol::minus))
 					minus = true;
+			}
+			if (match(Symbol::number))
+			{
 				//get the value of number
-				except(Symbol::number);
 				int value = current_token.getValue();
 				if (minus)
 					value = -value;
 				//[FIXME]:enter the symbol set.
+				next();
 			}
 			else if (match(Symbol::charconst)) {
 				//[FXIMe]:enter the symbol set.
+				string char_value = current_token.getName();
+				next();
 			}
 			else {
 				Error::errorMessage(16, LineNo);
+				next();
 			}
 
 		}
@@ -212,6 +218,7 @@ void Parser::variableDec() {
 			Error::errorMessage(17, LineNo);
 			next();
 		}
+		except(Symbol::semicolon);
 		if (match(Symbol::ident))
 			continue;
 		else
@@ -258,12 +265,21 @@ void Parser::variableDef() {
 }
 
 //将var的具体类型填入到符号表中
+//<类型> :: = <基本类型> | <数组类型>
 void Parser::varType(queue<string>* var_name) {
 #ifdef DEBUG
 	level++;
 	PRINT("varType");
 #endif // DEBUG
-
+	if (match(Symbol::integersym) || match(Symbol::charsym))
+	{
+		//enter the table with the var's type.
+		next();
+	}
+	else if (match(Symbol::arraysym))
+	{
+		selector();
+	}
 #ifdef DEBUG
 	level--;
 #endif // DEBUG
@@ -351,7 +367,9 @@ void Parser::basicType() {
 #endif // DEBUG
 
 	if (match(Symbol::integersym) || match(Symbol::charsym))
+	{
 		next();
+	}
 	else
 	{
 		//No.12 except type after ':'
@@ -457,6 +475,7 @@ void Parser::statement() {
 #endif // DEBUG
 
 }
+
 //Handle expressions
 //<表达式> ::= [+|-]<项>{<加法运算符><项>}
 void Parser::expression() {
@@ -484,6 +503,7 @@ void Parser::expression() {
 #endif // DEBUG
 
 }
+
 //Handle the index varaiable of array
 //<因子> ::= <标识符>|<标识符>'['<表达式>']'|<无符号整数>| '('<表达式>')' | <函数调用语句>
 void Parser::factor(){
@@ -527,24 +547,96 @@ void Parser::factor(){
 
 }
 
-void Parser::selector() {}
-
+//<数组类型> ::= array'['<无符号整数>']' of <基本类型>
+void Parser::selector() {
+#ifdef DEBUG
+	level++;
+	PRINT("selector");
+#endif // DEBUG
+	except(Symbol::arraysym);
+	if (match(Symbol::lsquare)) {
+		next();
+		except(Symbol::number);
+		int array_size = current_token.getValue();
+		//enter the array_table;
+		except(Symbol::rsquare);
+		except(Symbol::ofsym);
+		TokenType temp;
+		if (match(Symbol::integersym) || match(Symbol::charsym))
+		{
+			if (match(Symbol::integersym))
+				temp = TokenType::inttyp;
+			else
+				temp = TokenType::chartyp;
+		}
+		else {
+			//NOT CORRET TYPE;
+			Error::errorMessage(21, LineNo);
+			temp = TokenType::notyp;
+		}
+		//enter the array_table;
+		next();
+	}
+#ifdef DEBUG
+	level--;
+#endif // DEBUG
+}
 
 //Handle the call of procedure and function
-//<函数调用语句> ::= <标识符>'('[<实在参数表>]')'
+//<函数调用语句>  :: = <标识符>[<实在参数表>]
 void Parser::profuncCall(string ident) {
 #ifdef DEBUG
 	level++;
 	PRINT("call procedure or function");
 #endif // DEBUG
 
+	if (match(Symbol::ident)) {
+		next();
+	}
+	else {
+		Error::errorMessage(31, LineNo);
+		next();
+	}
+	// ( means there is a real parameter list.
+	if (match(Symbol::lparen)) {
+		realParameter();
+	}
+
+#ifdef DEBUG
+	level--;
+#endif // DEBUG
+}
+
+//<实在参数表>    :: = '(' <实在参数> {, <实在参数>}')'
+//<实在参数>      :: = <表达式>
+void Parser::realParameter() {
+#ifdef DEBUG
+	level++;
+	PRINT("real Parameter");
+#endif // DEBUG
+
+	if (match(Symbol::lparen)) {
+		next();
+		while (1) {
+			expression();
+			if (!match(Symbol::comma))
+				break;
+		}
+	}
+	if (match(Symbol::rparen)) {
+		next();
+	}
+	else {
+		Error::errorMessage(30, LineNo);
+		next();
+	}
 #ifdef DEBUG
 	level--;
 #endif // DEBUG
 
 }
 //Handle the for statement
-//<for循环语句>      :: = for <标识符>  : = <表达式> （downto | to） <表达式> do <语句> //步长为1
+//<for循环语句>:: = for <标识符>  : = <表达式> （downto | to） <表达式> do <语句> //步长为1
 void Parser::forStatement() {
 #ifdef DEBUG
 	level++;
@@ -556,33 +648,118 @@ void Parser::forStatement() {
 	if (match(Symbol::ident)) {
 
 	}
+	else {
+		Error::errorMessage(22,LineNo);
+		next();
+	}
+	// :=
+	except(Symbol::becomes);
+
+	//expression
+	if (match(Symbol::plus) || match(Symbol::minus) || match(Symbol::ident)) {
+		expression();
+	}
+	else {
+		Error::errorMessage(23, LineNo);
+		//skip some thing until downto or to.
+		skip();
+	}
+	//downto | to
+	if (match(Symbol::downtosym) || match(Symbol::tosym)) {
+		next();
+	}
+	else {
+		//
+		Error::errorMessage(24, LineNo);
+		next();
+	}
+	// expression
+	if (match(Symbol::plus) || match(Symbol::minus) || match(Symbol::ident)) {
+		expression();
+	}
+	else {
+		Error::errorMessage(23, LineNo);
+		//skip some thing until downto or to.
+		skip();
+	}
+	// do
+	except(Symbol::dosym);
+	// statement
+	statement();
+
 #ifdef DEBUG
 	level--;
 #endif // DEBUG
 
 }
+
 //Handle the while statement
+//<当循环语句> :: = do<语句> while<条件>
 void Parser::whileStatement() {
 #ifdef DEBUG
 	level++;
 	PRINT("while statement");
 #endif // DEBUG
-
+	// do
+	except(Symbol::dosym);
+	statement();
+	except(Symbol::whilesym);
+	condition();
 #ifdef DEBUG
 	level--;
 #endif // DEBUG
 
 }
+
 //Handle the if statement;
+//<条件语句> :: = if<条件>then<语句> | if<条件>then<语句>else<语句>
 void Parser::ifStatement() {
 #ifdef DEBUG
 	level++;
 	PRINT("if statement");
 #endif // DEBUG
+	except(Symbol::ifsym);
+	condition();
+	except(Symbol::thensym);
+	statement();
+	next();
+	if (match(Symbol::elsesym))
+	{
+		next();
+		statement();
+	}
 #ifdef DEBUG
 	level--;
 #endif // DEBUG
 
+}
+
+//<条件>       ::= <表达式><关系运算符><表达式>
+//<关系运算符> ::= <|<=|>|>= |=|<>
+void Parser::condition() {
+	if (match(Symbol::ident))
+	{
+		expression();
+	}
+	else {
+		Error::errorMessage(25, LineNo);
+		skip();
+	}
+	// <= 
+	if (match(Symbol::leq) || match(Symbol::lss) || match(Symbol::gtr) || match(Symbol::geq) || match(Symbol::eql) || match(Symbol::neq))
+		next();
+	else {
+		Error::errorMessage(26, LineNo);
+		next();
+	}
+	if (match(Symbol::ident))
+	{
+		expression();
+	}
+	else {
+		Error::errorMessage(27, LineNo);
+		next();
+	}
 }
 
 //Handle compound statement
@@ -618,16 +795,36 @@ void Parser::compoundStatement() {
 #endif // DEBUG
 
 }
+
 //Handle the assign
+//<赋值语句>      ::=  <标识符> := <表达式>| <函数标识符> := <表达式> | <标识符>'['<表达式>']':= <表达式>
 void Parser::assignment(string ident) {
 #ifdef DEBUG
 	level++;
 	PRINT("assignment");
 #endif // DEBUG
+
+	if (match(Symbol::ident)) {
+		//find what the type of ident from symbol table.
+		next();
+		// [
+		if (match(Symbol::lsquare)) {
+			next();
+			expression();
+			// ]
+			except(Symbol::rsquare);
+		}
+		// :=
+		except(Symbol::becomes);
+		expression();
+	}
+	else {
+		Error::errorMessage(29, LineNo);
+	}
+
 #ifdef DEBUG
 	level--;
 #endif // DEBUG
-
 }
 
 //<项>::= <因子>{<乘法运算符><因子>}
