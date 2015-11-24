@@ -26,5 +26,9 @@ int main() {
 	//parser_func->parser();
 	Parser* parser_test= new Parser("test/13061193_test.txt");
 	parser_test->parser(); 
+	//Parser* parser_proc = new Parser("test/procedure.txt");
+	//parser_proc->parser();
+	//Parser* parser_call = new Parser("test/call.txt");
+	//parser_call->parser();
 	system("pause");
 }

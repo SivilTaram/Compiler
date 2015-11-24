@@ -13,6 +13,8 @@ int level = 0;
 #endif // DEBUG
 
 
+//except is suitable for one expression
+//or something shorter.
 void Parser::except(Symbol sym) {
 	if (match(sym)) {
 #ifdef DEBUG_EXCEPT
@@ -112,7 +114,6 @@ void Parser::except(Symbol sym) {
 			break;
 		}
 #endif // DEBUG
-
 		next();
 	}
 	else {
@@ -152,9 +153,24 @@ void Parser::next() throw(exception){
 };
 
 //skip some words until a valid follow set.
-void Parser::skip() {};
+void Parser::skip(symset fsys,int error_code) {
+	Error::errorMessage(error_code, LineNo);
+	while (fsys.find(current_token.getType()) == fsys.end())
+	{
+		next();
+	}
+};
 //test whether the current_token is valid.
-void Parser::test() {};
+void Parser::test(symset s1,symset s2,int error_code) {
+
+	//not found
+	if (s1.find(current_token.getType()) == s1.end()) {
+		symset stop_set(s1.begin(), s1.end());
+		stop_set.insert(s2.begin(), s2.end());
+		skip(stop_set, error_code);
+	}
+
+};
 
 /*
 Start parse.
@@ -282,6 +298,7 @@ void Parser::constDef() {
 			if (match(Symbol::plus) || match(Symbol::minus)) {
 				if (match(Symbol::minus))
 					minus = true;
+				next();
 			}
 			if (match(Symbol::number))
 			{
@@ -557,9 +574,17 @@ void Parser::statement() {
 		{
 			//[FIXME] realParameter. 
 			realParameter();
-		}//or there should be a assign.
+		}
+		// procedure;
+		else if (match(Symbol::semicolon))
+		{
+		}
+		//or there should be a assign.
+		//  ident := 
 		else
+		{
 			assignment(ident);
+		}
 	}
 	else if (match(Symbol::beginsym))
 		//Note!!! the compoundstatement read the begin as the first!
@@ -746,6 +771,7 @@ void Parser::realParameter() {
 			expression();
 			if (!match(Symbol::comma))
 				break;
+			next();
 		}
 	}
 	if (match(Symbol::rparen)) {
@@ -859,14 +885,7 @@ void Parser::ifStatement() {
 //<条件>       ::= <表达式><关系运算符><表达式>
 //<关系运算符> ::= <|<=|>|>= |=|<>
 void Parser::condition() {
-	if (match(Symbol::ident))
-	{
-		expression();
-	}
-	else {
-		Error::errorMessage(25, LineNo);
-		skip();
-	}
+	expression();
 	// <= 
 	if (match(Symbol::leq) || match(Symbol::lss) || match(Symbol::gtr) || match(Symbol::geq) || match(Symbol::eql) || match(Symbol::neq))
 		next();
@@ -874,14 +893,7 @@ void Parser::condition() {
 		Error::errorMessage(26, LineNo);
 		next();
 	}
-	if (match(Symbol::ident))
-	{
-		expression();
-	}
-	else {
-		Error::errorMessage(27, LineNo);
-		next();
-	}
+	expression();
 }
 
 //Handle compound statement
@@ -928,8 +940,8 @@ void Parser::assignment(string ident) {
 	if (match(Symbol::lsquare)) {
 		next();
 		expression();
-			// ]
-			except(Symbol::rsquare);
+		// ]
+		except(Symbol::rsquare);
 	}
 	// :=
 	except(Symbol::becomes);

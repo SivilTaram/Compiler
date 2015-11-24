@@ -4,8 +4,11 @@
 #include "symbolset.h"
 #include "lexer.h"
 #include <queue>
+#include <set>
 
 #define DEBUG
+
+typedef set<Symbol> symset;
 
 class  Parser {
 private:
@@ -22,9 +25,9 @@ public:
 	void except(Symbol sym);
 
 	//skip some words until a valid follow set.
-	void skip();
+	void skip(symset s1,int error_code);
 	//test whether the current_token is valid.
-	void test();
+	void test(symset s1, symset s2, int error_code);
 
 	void block();
 
@@ -76,6 +79,7 @@ public:
 
 class eofexception : public exception {
 };
+
 
 /*
 <³ÌÐò>          ::=   <·Ö³ÌÐò>.
