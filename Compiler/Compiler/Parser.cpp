@@ -599,19 +599,21 @@ void Parser::funcDec() {
 				except(Symbol::semicolon);
 			}
 		}
+		//the begin of the basic type.
 		//except : then basictype and then ;
 		if (match(Symbol::colon))
 		{
 			next();
-			TokenType type = TokenType::inttyp;
+			TokenType type = TokenType::notyp;
 			if (match(Symbol::charsym))
 				type = TokenType::chartyp;
 			else if (match(Symbol::integersym))
 				type = TokenType::inttyp;
 			else
 				type = TokenType::notyp;
-			//the 
-			item->setType(type);
+			//set the function's return type.
+			if(item!=NULL)
+				item->setType(type);
 		}
 		else
 		{
@@ -626,7 +628,6 @@ void Parser::funcDec() {
 		Error::errorMessage(11, LineNo);
 		//skip();
 	}
-
 #ifdef DEBUG
 	level--;
 #endif
@@ -642,23 +643,29 @@ void Parser::statement() {
 
 	//assignment or proc or func
 	if (match(Symbol::ident)) {
-		string ident = current_token.getName();
+		string ident_name = current_token.getName();
 		next();
 		//proc or func there should be a paren
-		if (match(Symbol::lparen))
+		//<过程调用语句>  ::=  <标识符>[<实在参数表>]
+		if (match(Symbol::lparen) || match(Symbol::semicolon) || match(Symbol::endsym) )
 		{
 			//[FIXME] realParameter. 
-			realParameter();
+			callPro(ident_name);
 		}
 		// procedure;
-		else if (match(Symbol::semicolon))
-		{
-		}
+		//if there is a ';',this means
+		//this is a procedure or a func 's call without parameters.
+		//like this one:
+		// A;
+		//      or
+		// begin
+		// A
+		// end
 		//or there should be a assign.
 		//  ident := 
-		else
+		else if(match(Symbol::becomes))
 		{
-			assignment(ident);
+			assignment(ident_name);
 		}
 	}
 	else if (match(Symbol::beginsym))
@@ -677,6 +684,7 @@ void Parser::statement() {
 	// ;
 	else if (match(Symbol::semicolon) || match(Symbol::endsym))
 	{
+	//this is a blank statement.
 #ifdef DEBUG
 		level++;
 		PRINT("blank statement");
@@ -695,7 +703,7 @@ void Parser::statement() {
 
 //Handle expressions
 //<表达式> ::= [+|-]<项>{<加法运算符><项>}
-void Parser::expression() {
+SymbolItem* Parser::expression() {
 #ifdef DEBUG
 	level++;
 	PRINT("expression");
@@ -750,7 +758,7 @@ void Parser::factor(){
 		else if (match(Symbol::lparen))
 		{
 			//call
-			realParameter();
+			realParameter(ident_name);
 			//profuncCall(ident_name);
 		}
 	}
@@ -816,42 +824,33 @@ void Parser::selector(queue<string>* var_name) {
 }
 
 //Handle the call of procedure and function
+//<过程调用语句>  :: = <标识符>[<实在参数表>]
+void Parser::callPro(string ident) {
+	if (match(Symbol::lparen)) {
+
+	}
+}
+
 //<函数调用语句>  :: = <标识符>[<实在参数表>]
-//void Parser::profuncCall(string ident) {
-//#ifdef DEBUG
-//	level++;
-//	PRINT("call procedure or function");
-//#endif // DEBUG
-//
-//	if (match(Symbol::ident)) {
-//		next();
-//	}
-//	else {
-//		Error::errorMessage(31, LineNo);
-//		next();
-//	}
-//	// ( means there is a real parameter list.
-//	if (match(Symbol::lparen)) {
-//		realParameter();
-//	}
-//
-//#ifdef DEBUG
-//	level--;
-//#endif // DEBUG
-//}
+SymbolItem* Parser::callFunc(string ident) {
+
+}
+
 
 //<实在参数表>    :: = '(' <实在参数> {, <实在参数>}')'
 //<实在参数>      :: = <表达式>
-void Parser::realParameter() {
+void Parser::realParameter(string ident_name) {
 #ifdef DEBUG
 	level++;
 	PRINT("real Parameter");
 #endif // DEBUG
-
+	vector<SymbolItem*> args_list = symbol_set.getArgList(ident_name);
+	vector<SymbolItem*> real_parameters;
 	if (match(Symbol::lparen)) {
 		next();
 		while (1) {
-			expression();
+			//add the args to the realparameters.
+			real_parameters.push_back(expression());
 			if (!match(Symbol::comma))
 				break;
 			next();
@@ -864,6 +863,11 @@ void Parser::realParameter() {
 		Error::errorMessage(30, LineNo);
 		next();
 	}
+
+
+	//gen a call func quater.
+	//I want to generate a quater with push and var.
+
 #ifdef DEBUG
 	level--;
 #endif // DEBUG
@@ -1036,15 +1040,23 @@ void Parser::assignment(string ident) {
 }
 
 //<项>::= <因子>{<乘法运算符><因子>}
+//We should put every temporary variables into one trying our best.
 void Parser::item() {
 #ifdef DEBUG
 	level++;
 	PRINT("item");
 #endif // DEBUG
-	factor();
+	//the first factor.
+	SymbolItem * first_factor = factor();
+	SymbolItem * temp = NULL;
+	
+	//times means "*";
+	//slash means "/";
 	while (match(Symbol::times) || match(Symbol::slash)) {
 		next();
-		factor();
+		SymbolItem *second_factor = factor();
+		//there should be a temp varaiable.
+		temp = new SymbolItem()
 	}
 #ifdef DEBUG
 	level--;

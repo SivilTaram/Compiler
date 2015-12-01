@@ -53,31 +53,40 @@ public:
 	void funcDec();
 	//Handle statements
 	void statement();
-	//Handle expressions
-	void expression();
-	//Handle the index varaiable of array
-	void factor();
 	void selector(queue<string>* var_name);
 	//Handle the call of procedure and function
 	//void profuncCall(string name);
 	//Handle the real parameters
-	void realParameter();
 	//Handle the for statement 
 	void forStatement();
 	//Handle the while statement
 	void whileStatement();
 	//Handle the if statement;
 	void ifStatement();
-	void condition();
+	Symbol condition();
 	//Handle compound statement
 	void compoundStatement();
 	//Handle the assign
 	void assignment(string name);
+	//Item
+	void callPro(string ident);
+
+	//the func should have a return value.
+	SymbolItem* callFunc(string ident);
+	SymbolItem* realParameter(string ident_name);
+
+	/* They should have return value.*/
+	//Item
+	SymbolItem* item();
+	//Handle expressions
+	SymbolItem* expression();
+	//Handle the index varaiable of array
+	SymbolItem* factor();
+
+
+	//read and write statement.
 	void readStatement();
 	void writeStatement();
-	void item();
-	//Item
-	void stringDec();
 };
 
 class eofexception : public exception {
