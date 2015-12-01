@@ -7,20 +7,26 @@
 #include <assert.h>
 #include <array>     
 
-
+#define ARGLIST (vector<SymbolItem*>) 
 #define MAX_LEVEL (3+1)
 
 using namespace std;
 
+typedef map<string, SymbolItem*> SYMBOLMAP;
+typedef map<string, SymbolSet*> TABLEMAP;
 
-enum TokenObj {
-	constobj,
-	varobj,
-	procobj,
-	funcobj,
-	paraobj,
-	paravarobj,
-	arrayobj
+enum TokenKind {
+	CONST,// .data
+	VAR,
+	PARA, // we should put it on the stack.
+	PARAVAR, // stack.
+	ARRAY, // array must be integer or char.
+	PROC,
+	FUNC,
+	LABEL,// we should use it in three address code.
+	TEMP, // Temporary varibale.
+	TEMP_ADD,// Temporary variable address(in array).
+	TEMP_CON// immediate number. Temporary constant.
 };
 
 enum TokenType {
@@ -33,37 +39,45 @@ enum TokenType {
 class SymbolItem {
 private:
 	string name;
-	TokenObj kind;
+	TokenKind kind;
 	TokenType type;
 	int value;
 	int size;
 	int level;
-	int link;
+
 	//for coude generation.Offset of base label.
 	int offset;
-	bool normal;
 public:
 	// get methods.
+	SymbolItem(string _name, TokenKind _kind, TokenType _type, int _value=0) {
+		name = _name;
+		kind = _kind;
+		type = _type;
+		value = _value;
+		size = 1;
+		//the char here will be regarded as the int.
+		//This may be changed.
+	}
 	string getName() { return name; }
-	TokenObj getKind() { return kind; }
+	TokenKind getKind() { return kind; }
 	TokenType getType() { return type; }
 	int getValue() { return value; }
 	int getSize() { return size; }
 	int getLevel() { return level; }
 	int getOffset() { return offset; }
-	int getLink() { return link; }
-	SymbolItem(string _name,TokenObj _kind,TokenType _type,int _value,int _level,int _link,bool _normal=false):kind(_kind),value(_value),name(_name),type(_type),level(_level),link(_link),normal(_normal){}
-	
+
 	string getKindName() {
 		switch (kind)
 		{
-		case TokenObj::constobj:return "const";
-		case TokenObj::arrayobj:return "array";
-		case TokenObj::funcobj:return "function";
-		case TokenObj::paraobj:return "parameter";
-		case TokenObj::paravarobj:return "var parameter";
-		case TokenObj::procobj:return "procedure";
-		case TokenObj::varobj:return "var";
+		case TokenKind::CONST:return "const";
+		case TokenKind::ARRAY:return "array";
+		case TokenKind::FUNC:return "function";
+		case TokenKind::PARA:return "parameter";
+		case TokenKind::PARAVAR:return "var parameter";
+		case TokenKind::PROC:return "procedure";
+		case TokenKind::VAR:return "var";
+		case TokenKind::TEMP:return "temp";
+		case TokenKind::LABEL:return "label";
 		default: return "unknown";
 		}
 	}
@@ -81,13 +95,12 @@ public:
 
 	// set methods.
 	void setName(string _name) { name = _name; }
-	void setKind(TokenObj _kind) { kind = _kind; }
+	void setKind(TokenKind _kind) { kind = _kind; }
 	void setType(TokenType _type) { type = _type; }
 	void setValue(int _value) { value = _value; }
 	void setSize(int _size) { size = _size; }
 	void setLevel(int _level) { level = _level; }
 	void setOffset(int _offset) { offset = _offset; }
-	void setLink(int _link) { link = _link; }
 };
 
 class SymbolPro {
@@ -120,22 +133,50 @@ public:
 	}
 };
 
-class SymbolSet {
-private:
-	vector<SymbolItem> table;
-	vector<SymbolPro> protable;
-	vector<SymbolArray> arrtable;
-	array<SymbolPro*, MAX_LEVEL> display;
-	//if root,level = 0
-	int level;
+class SymbolSet{
 public:
-	SymbolSet();
-	int enter(SymbolItem& item);
-	int locIdent(string name);
-	TokenType getType(string name);
-	//enter a procedure or function.
-	void enterproc(SymbolItem& _item,SymbolPro& _pro);
-	//exit a procedure or function.
-	void exitproc();
+	// the pointer to the father of a procedure or a function.
+	SymbolSet * father_table;
+
+	//create and the delete method.
+	SymbolSet(SymbolItem* _proc, SymbolSet* _father, int _level);
+
+	//get the item from the table according to the name.
+	SymbolItem * getItem(string _name);
+	bool enterItem(SymbolItem* _item);
+
+	//get the table the proc mapping to.
+
+	SymbolItem* getProcItem();
+	SymbolSet * getProcTable(string _procname);
+	string		getProcName();
+	SymbolSet * enterProc(SymbolItem* _proc);
+
+	ARGLIST getArgList();
+
+	//get the table's mapping item.
+
+#ifdef DEBUG_SYMBOL
+	void debug_printer();
+#endif // DEBUG
+
+	int getLevel();
+	/***
+	int getArgsSize();
+	int getStackSize();
+	//calculate offset of var,para,var para,array based on base pointer($fp)
+	int calOffset();
+	***/
+
+private:
+
+	SymbolItem* proc;
+	ARGLIST local_list;
+	SYMBOLMAP symbol_map;
+	//store the names of current level function or procedure.
+	TABLEMAP table_map;
+	int level;
+	/*int stack_size;
+	int args_size;*/
 };
 #endif

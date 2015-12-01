@@ -196,6 +196,7 @@ Token Lexer::getsym() {
 	// ' ' const char.
 	else if (peek == '\'') {
 		getch();
+		char value = peek;
 		string temp ="\'"+peek;
 		getch();
 		if (peek == '\'')
@@ -204,7 +205,7 @@ Token Lexer::getsym() {
 			getch();
 			temp += "\'";
 			token.clear();
-			return Token(sym,linenum,temp);
+			return Token(sym,linenum,"",value);
 		}
 		else
 		{

@@ -3,6 +3,7 @@
 #include "token.h"
 #include "symbolset.h"
 #include "lexer.h"
+#include "rootsymbolset.h"
 #include <queue>
 #include <set>
 
@@ -14,7 +15,8 @@ class  Parser {
 private:
 	Token current_token;
 	Lexer token_lexer;
-	
+	RootSymbolSet symbol_set;
+
 public:
 	Parser(string file_path) :token_lexer(file_path){};
 	bool match(Symbol sym);
@@ -24,6 +26,7 @@ public:
 	//Else skip some words.
 	void except(Symbol sym);
 
+	SymbolItem* get(string _ident_name);
 	//skip some words until a valid follow set.
 	void skip(symset s1,int error_code);
 	//test whether the current_token is valid.
@@ -45,7 +48,7 @@ public:
 	//Handle the list of params of procdure or function.
 	void parameterList();
 	//Handle the basic type.
-	void basicType();
+	void basicType(queue<string>* args_name,TokenKind kind);
 	//Hanld function delaration
 	void funcDec();
 	//Handle statements
@@ -54,7 +57,7 @@ public:
 	void expression();
 	//Handle the index varaiable of array
 	void factor();
-	void selector();
+	void selector(queue<string>* var_name);
 	//Handle the call of procedure and function
 	//void profuncCall(string name);
 	//Handle the real parameters

@@ -12,7 +12,6 @@ using namespace std;
 int level = 0;
 #endif // DEBUG
 
-
 //except is suitable for one expression
 //or something shorter.
 void Parser::except(Symbol sym) {
@@ -152,6 +151,16 @@ void Parser::next() throw(exception){
 #endif
 };
 
+SymbolItem* Parser::get(string _ident_name) {
+	SymbolItem* item = symbol_set.search(_ident_name);
+	if (item != NULL)
+		return item;
+	//The Undefined ident;
+	Error::errorMessage(40, LineNo);
+	item = symbol_set.insert(_ident_name, TokenKind::VAR, TokenType::notyp);
+	return item;
+}
+
 //skip some words until a valid follow set.
 void Parser::skip(symset fsys,int error_code) {
 	Error::errorMessage(error_code, LineNo);
@@ -187,7 +196,6 @@ void Parser::parser() {
 		PRINT("period");
 		level--;
 #endif // DEBUG
-
 	}
 }
 
@@ -232,12 +240,15 @@ void Parser::block() {
 				//the loop is outside,and procDec can't have a loop.
 				procDec();
 				block();
+				symbol_set.goback();
 				except(Symbol::semicolon);
 			}
 			else {
 				next();
 				funcDec();
 				block();
+				//SymbolTable go back.
+				symbol_set.goback();
 				except(Symbol::semicolon);
 			}
 		}
@@ -265,15 +276,16 @@ void Parser::constDec() {
 			// because there is just one way.
 			constDef();
 			if (match(Symbol::comma))
-			{
 				next();
-			}
 			else
 				break;
 		}
 		// except ";" here.
 		except(Symbol::semicolon);
 	}
+	else
+		// I am confused by my index of errors. Oh my god....
+		Error::errorMessage(41, LineNo);
 #ifdef DEBUG
 	level--;
 #endif // DEBUG
@@ -289,10 +301,17 @@ void Parser::constDef() {
 #endif // DEBUG
 
 	// if there is a identiter.
+	// const should be added into the symbolset.
+	//read the ident twice.
 	if (match(Symbol::ident)) {
+		//const_name
 		string ident_name = current_token.getName();
 		next();
-		if (match(Symbol::eql)) {
+		// I have just estimated the PL0...
+		if (match(Symbol::eql) || match(Symbol::becomes)) {
+			if (match(Symbol::becomes))
+				//[Error]:There should be a eql.
+				Error::errorMessage(42, LineNo);
 			next();
 			bool minus = false;
 			if (match(Symbol::plus) || match(Symbol::minus)) {
@@ -303,22 +322,27 @@ void Parser::constDef() {
 			if (match(Symbol::number))
 			{
 				//get the value of number
-				int value = current_token.getValue();
+				int number_value = current_token.getValue();
 				if (minus)
-					value = -value;
+					number_value = - number_value;
 				//[FIXME]:enter the symbol set.
+				//There should be a number.
+				if (!symbol_set.insert(ident_name, TokenKind::CONST, TokenType::inttyp,number_value))
+					Error::errorMessage(42, LineNo);
 				next();
 			}
 			else if (match(Symbol::charconst)) {
 				//[FXIMe]:enter the symbol set.
-				string char_value = current_token.getName();
+				// if this is a charconst, and the name means its char.
+				char char_value = current_token.getValue();
+				if (!symbol_set.insert(ident_name, TokenKind::CONST, TokenType::chartyp,char_value))
+					Error::errorMessage(42, LineNo);
 				next();
 			}
 			else {
 				Error::errorMessage(16, LineNo);
 				next();
 			}
-
 		}
 	}
 #ifdef DEBUG
@@ -342,11 +366,11 @@ void Parser::variableDec() {
 			next();
 		}
 		except(Symbol::semicolon);
+		//identifier or others.
 		if (match(Symbol::ident))
 			continue;
 		else
 			break;
-		next();
 	}
 #ifdef DEBUG
 	level--;
@@ -360,7 +384,7 @@ void Parser::variableDef() {
 	level++;
 	PRINT("variableDefinition");
 #endif // DEBUG
-	queue<string> *var_name = new queue<string>();
+	queue<string>* var_name = new queue<string>();
 	while (1) {
 		if (match(Symbol::ident)) {
 			string ident_name = current_token.getName();
@@ -372,9 +396,7 @@ void Parser::variableDef() {
 		next();
 		// :
 		if (match(Symbol::comma))
-		{
 			next();
-		}
 		else
 			break;
 	}
@@ -394,14 +416,36 @@ void Parser::varType(queue<string>* var_name) {
 	level++;
 	PRINT("varType");
 #endif // DEBUG
+
 	if (match(Symbol::integersym) || match(Symbol::charsym))
 	{
 		//enter the table with the var's type.
+		// first in first out.Then the ident_name should be in order.
+		//And we should do util the queue is empty.
+		if (match(Symbol::integersym)) {
+			while (!(var_name->empty())) {
+				// the front of var_name is the latest variables.
+				//[Error] Var repeated.
+				if (!symbol_set.insert(var_name->front(), TokenKind::VAR, TokenType::inttyp))
+					Error::errorMessage(42, LineNo);
+				var_name->pop();
+			}
+		}
+		else if (match(Symbol::charsym)) {
+			while (!(var_name->empty())) {
+				// the front of var_name is the latest variables.
+				//[Error] Var repeated.
+				if (!symbol_set.insert(var_name->front(), TokenKind::VAR, TokenType::chartyp))
+					Error::errorMessage(42, LineNo);
+				var_name->pop();
+			}
+		}
 		next();
 	}
+	//array[10] of integer;
 	else if (match(Symbol::arraysym))
 	{
-		selector();
+		selector(var_name);
 	}
 #ifdef DEBUG
 	level--;
@@ -421,6 +465,11 @@ void Parser::procDec() {
 
 	if (match(Symbol::ident))
 	{
+		string proc_name = current_token.getName();
+		SymbolItem* proc = symbol_set.insert(proc_name, TokenKind::PROC, TokenType::voidtyp);
+		if (proc == NULL)
+			//the procedure is built.
+			Error::errorMessage(42,LineNo);
 		next();
 		// if parameter table's first is '(',then loop
 		// to map the parameter list.
@@ -458,15 +507,20 @@ void Parser::parameterList() {
 	level++;
 	PRINT("parameter List");
 #endif // DEBUG
-
+	TokenKind kind = TokenKind::PARA;
 	if (match(Symbol::varsym))
 	{
+		kind = TokenKind::PARAVAR;
 		next();
 		//[FIXME] there should be a enter table's handle.
 		//And the param is [var]!!!
 	}
+	queue<string> *args = new queue<string>();
 	while (1) {
-		except(Symbol::ident);
+		if (match(Symbol::ident)) {
+			args->push(current_token.getName());
+			next();
+		}
 		if (match(Symbol::colon))
 		{
 			next();
@@ -475,7 +529,8 @@ void Parser::parameterList() {
 		except(Symbol::comma);
 	}
 	//basic type.
-	basicType();
+	//kind means var para or normal para.
+	basicType(args,kind);
 #ifdef DEBUG
 	level--;
 #endif // DEBUG
@@ -483,14 +538,16 @@ void Parser::parameterList() {
 }
 
 //<基本类型>  ::=  integer | char
-void Parser::basicType() {
+void Parser::basicType(queue<string> *args,TokenKind kind) {
 #ifdef DEBUG
 	level++;
 	PRINT("basic Type");
 #endif // DEBUG
-
+	TokenType type = TokenType::inttyp;
 	if (match(Symbol::integersym) || match(Symbol::charsym))
 	{
+		if (match(Symbol::charsym))
+			type = TokenType::chartyp;
 		next();
 	}
 	else
@@ -499,10 +556,14 @@ void Parser::basicType() {
 		Error::errorMessage(12,LineNo);
 		next();
 	}
+	while (!(args->empty())) {
+		if (!(symbol_set.insert(args->front(), kind, type)))
+			Error::errorMessage(43, LineNo);
+		args->pop();
+	}
 #ifdef DEBUG
 	level--;
 #endif // DEBUG
-
 }
 
 //Handle funcDec
@@ -514,7 +575,12 @@ void Parser::funcDec() {
 		level++;
 		PRINT("function Declaration "+ current_token.getName());
 #endif // DEBUG
-
+		string func_name = current_token.getName();
+		//void is the temporatory return type!!!
+		SymbolItem* item = symbol_set.insert(func_name, TokenKind::FUNC, TokenType::voidtyp);
+		if (item == NULL)
+			//[Error]:redefintion.
+			Error::errorMessage(44, LineNo);
 		next();
 		// if parameter table's first is '(',then loop
 		// to map the parameter list.
@@ -537,7 +603,15 @@ void Parser::funcDec() {
 		if (match(Symbol::colon))
 		{
 			next();
-			basicType();
+			TokenType type = TokenType::inttyp;
+			if (match(Symbol::charsym))
+				type = TokenType::chartyp;
+			else if (match(Symbol::integersym))
+				type = TokenType::inttyp;
+			else
+				type = TokenType::notyp;
+			//the 
+			item->setType(type);
 		}
 		else
 		{
@@ -550,6 +624,7 @@ void Parser::funcDec() {
 	else {
 		//No.11 should define identity at the first of proc.After procedure.
 		Error::errorMessage(11, LineNo);
+		//skip();
 	}
 
 #ifdef DEBUG
@@ -698,7 +773,7 @@ void Parser::factor(){
 }
 
 //<数组类型> ::= array'['<无符号整数>']' of <基本类型>
-void Parser::selector() {
+void Parser::selector(queue<string>* var_name) {
 #ifdef DEBUG
 	level++;
 	PRINT("selector");
@@ -707,6 +782,7 @@ void Parser::selector() {
 	if (match(Symbol::lsquare)) {
 		next();
 		except(Symbol::number);
+		//array_size;
 		int array_size = current_token.getValue();
 		//enter the array_table;
 		except(Symbol::rsquare);
@@ -725,8 +801,15 @@ void Parser::selector() {
 			temp = TokenType::notyp;
 		}
 		//enter the array_table;
+		while (!var_name->empty()){
+			SymbolItem *array_item = symbol_set.insert(var_name->front(), TokenKind::ARRAY, temp);
+			if (array_item != NULL)
+				array_item->setSize(array_size);
+			var_name->pop();
+		}
 		next();
 	}
+	
 #ifdef DEBUG
 	level--;
 #endif // DEBUG
