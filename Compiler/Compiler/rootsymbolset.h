@@ -8,6 +8,7 @@ public:
 
 	SymbolItem* search(string _name); 
 	SymbolItem* insert(string _name, TokenKind _kind, TokenType _type,int _value=0);
+	SymbolItem* genTemp(TokenKind _kind,TokenType _type);
 
 	SymbolSet* getRootSet();
 	SymbolSet* getCurrentSet();
@@ -17,6 +18,7 @@ public:
 	bool findProc(string _name);
 	vector<SymbolItem*> getArgList(string _name);
 	string getCurrentName();
+	
 
 private:
 	//the pointer to the current table;

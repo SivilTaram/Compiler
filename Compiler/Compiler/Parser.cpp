@@ -151,6 +151,8 @@ void Parser::next() throw(exception){
 #endif
 };
 
+//accoring the ident_name to get the symbol item.
+//Important!!!:the ident_name include the function's name or the procedure's name.
 SymbolItem* Parser::get(string _ident_name) {
 	SymbolItem* item = symbol_set.search(_ident_name);
 	if (item != NULL)
@@ -644,13 +646,14 @@ void Parser::statement() {
 	//assignment or proc or func
 	if (match(Symbol::ident)) {
 		string ident_name = current_token.getName();
+		SymbolItem* ident_item = get(ident_name);
 		next();
 		//proc or func there should be a paren
 		//<过程调用语句>  ::=  <标识符>[<实在参数表>]
 		if (match(Symbol::lparen) || match(Symbol::semicolon) || match(Symbol::endsym) )
 		{
 			//[FIXME] realParameter. 
-			callPro(ident_name);
+			callPro(ident_item);
 		}
 		// procedure;
 		//if there is a ';',this means
@@ -665,7 +668,7 @@ void Parser::statement() {
 		//  ident := 
 		else if(match(Symbol::becomes))
 		{
-			assignment(ident_name);
+			assignment(ident_item);
 		}
 	}
 	else if (match(Symbol::beginsym))
@@ -731,44 +734,57 @@ SymbolItem* Parser::expression() {
 
 //Handle the index varaiable of array
 //<因子> ::= <标识符>|<标识符>'['<表达式>']'|<无符号整数>| '('<表达式>')' | <函数调用语句>
-void Parser::factor(){
+SymbolItem* Parser::factor(){
 #ifdef DEBUG
 	level++;
 	PRINT("factor");
 #endif // DEBUG
-
+	//if there is a array.should like this: array[(expr)];
 	if (match(Symbol::ident)) {
 		next();
-		// array[2]
+		// array
 		string ident_name = current_token.getName();
+		// the name of the array.
+		// the frist address of the array.
+		SymbolItem* ident = get(ident_name);
+		// [ 
 		if (match(Symbol::lsquare))
 		{
-			// [ 
+			if (ident->getType() != TokenKind::ARRAY)
+				Error::errorMessage(46, LineNo);
 			next();
 			// 表达式
-			expression();
+			SymbolItem* expr = expression();
 			// ]
-			if (match(Symbol::rsquare))
-			{
-				//enter symbol.
-				next();
-			}
+			//[Error]:there should be a array out of bound.
+			SymbolItem* temp = symbol_set.genTemp(TokenKind::TEMP_ADD, ident->getType());
+			//////////////////////////////////////
+			// should a gen to store the address of array.
+			/////////////////////////////////////
+			except(Symbol::rsquare);
 		}
 		// func()
 		else if (match(Symbol::lparen))
 		{
-			//call
-			realParameter(ident_name);
-			//profuncCall(ident_name);
+			//callFunc and generate the function code.
+			SymbolItem* func = callFunc(ident);
+			return func;
 		}
 	}
+	// 45
 	else if (match(Symbol::number)) {
+		//should be a temp const number;
+		SymbolItem * temp = symbol_set.genTemp(TokenKind::TEMP_CON, TokenType::inttyp);
+		temp->setValue(current_token.getValue());
 		next();
+		return temp;
 	}
+	// ( 3 + 4 )
 	else if(match(Symbol::lparen)) {
 		next();
-		expression();
+		SymbolItem * expr = expression();
 		except(Symbol::rparen);
+		return expr;
 	}
 	else {
 		Error::errorMessage(19, LineNo);
@@ -1018,21 +1034,23 @@ void Parser::compoundStatement() {
 
 //Handle the assign
 //<赋值语句>      ::=  <标识符> := <表达式>| <函数标识符> := <表达式> | <标识符>'['<表达式>']':= <表达式>
-void Parser::assignment(string ident) {
+void Parser::assignment(SymbolItem* ident) {
 #ifdef DEBUG
 	level++;
 	PRINT("assignment");
 #endif // DEBUG
-
 	if (match(Symbol::lsquare)) {
 		next();
-		expression();
+		//表达式
+		SymbolItem* expr = expression();
 		// ]
 		except(Symbol::rsquare);
 	}
 	// :=
 	except(Symbol::becomes);
-	expression();
+	if (ident->getKind() == TokenKind::FUNC)
+
+	SymbolItem* expr_2 = expression();
 
 #ifdef DEBUG
 	level--;
@@ -1041,7 +1059,7 @@ void Parser::assignment(string ident) {
 
 //<项>::= <因子>{<乘法运算符><因子>}
 //We should put every temporary variables into one trying our best.
-void Parser::item() {
+SymbolItem* Parser::item() {
 #ifdef DEBUG
 	level++;
 	PRINT("item");
@@ -1052,16 +1070,27 @@ void Parser::item() {
 	
 	//times means "*";
 	//slash means "/";
+	Opcode op;
 	while (match(Symbol::times) || match(Symbol::slash)) {
+		if (match(Symbol::times))
+			op = Opcode::MUL;
+		else
+			op = Opcode::DIV;
 		next();
 		SymbolItem *second_factor = factor();
 		//there should be a temp varaiable.
-		temp = new SymbolItem()
+		temp = symbol_set.genTemp(TokenKind::TEMP, first_factor->getType());
+		//there should be a resulttype.
+		//for example,should a char to int or others.
+		//But I don't have time to do this now
+		middle_code.gen(op, temp, first_factor, second_factor);
+		//let the first_factor store the result.
+		first_factor = temp;
 	}
 #ifdef DEBUG
 	level--;
 #endif // DEBUG
-
+	return first_factor;
 }
 
 //<读语句> ::=  read'('<标识符>{,<标识符>}')'
@@ -1072,11 +1101,13 @@ void Parser::readStatement() {
 #endif // DEBUG
 	except(Symbol::readsym);
 	except(Symbol::lparen);
-	vector<string> args;
+	vector<SymbolItem*> args;
 	while (1) {
 		if (match(Symbol::ident)) {
 			string ident_name = current_token.getName();
-			args.push_back(ident_name);
+			SymbolItem* ident = get(ident_name);
+			//ident
+			args.push_back(ident);
 			next();
 		}
 		else
@@ -1086,7 +1117,10 @@ void Parser::readStatement() {
 		else
 			break;
 	}
-	vector<string>::iterator it = args.begin();
+	vector<SymbolItem*>::iterator it = args.begin();
+	while (it != args.end()) {
+
+	}
 	//[FIXME] enter the symbol set.
 	//while (it != args.end()) {
 
@@ -1138,3 +1172,11 @@ void Parser::writeStatement() {
 #endif // DEBUG
 
 }
+
+
+
+/********************************************/
+// Have done for QuaterInstr                //
+// factor
+// item
+/********************************************/

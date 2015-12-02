@@ -4,6 +4,7 @@
 #include "symbolset.h"
 #include "lexer.h"
 #include "rootsymbolset.h"
+#include "middlecode.h"
 #include <queue>
 #include <set>
 
@@ -16,6 +17,7 @@ private:
 	Token current_token;
 	Lexer token_lexer;
 	RootSymbolSet symbol_set;
+	MiddleCode middle_code;
 
 public:
 	Parser(string file_path) :token_lexer(file_path){};
@@ -67,13 +69,13 @@ public:
 	//Handle compound statement
 	void compoundStatement();
 	//Handle the assign
-	void assignment(string name);
+	void assignment(SymbolItem* ident);
 	//Item
-	void callPro(string ident);
+	void callPro(SymbolItem* proc);
 
 	//the func should have a return value.
-	SymbolItem* callFunc(string ident);
-	SymbolItem* realParameter(string ident_name);
+	SymbolItem* callFunc(SymbolItem* func);
+	SymbolItem* realParameter(SymbolItem* func);
 
 	/* They should have return value.*/
 	//Item

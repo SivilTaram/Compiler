@@ -44,6 +44,19 @@ bool RootSymbolSet::goback() {
 	return true;
 }
 
+//generate temporatory variable to store the value of 
+// middle for QuaterInstr.
+SymbolItem* RootSymbolSet::genTemp(TokenKind _kind,TokenType _type) {
+	SymbolItem *temp = NULL;
+	//the temp's count for not repeating.
+	static int temp_count = 1;
+	string name = "!t" + temp_count;
+	temp = new SymbolItem(name, _kind, _type);
+	current_table->enterItem(temp);
+	temp_count++;
+	return temp;
+}
+
 //look up to search table;
 //[FIXME]
 //IMPORTANT!!!
