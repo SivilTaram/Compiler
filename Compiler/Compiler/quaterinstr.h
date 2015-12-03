@@ -24,8 +24,10 @@ enum Opcode {
 
 	// des = src
 	ASS,
-	// 
+	// [des] = src
 	ASSADD,
+	// temp = add of array + 
+	ARRADD,
 
 	JUMP,
 	LABEL,
@@ -33,7 +35,23 @@ enum Opcode {
 	WRITE,
 	BEGIN,
 	END,
+
+	CALL,
+	/*
+	as a result of not knowing offset in generating 
+	quaters.So we can't get the address of the vairable
+	or the parameters.So we must generate a push var
+	to do this.
+
+	*/
 	PUSH,
+	PUSHVAR,
+
+	//increment +1
+	INC,
+	//decrement -1
+	DEC,
+
 	RETURN
 
 };

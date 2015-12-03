@@ -34,6 +34,7 @@ enum TokenType {
 	inttyp,
 	chartyp,
 	notyp,
+	stringtyp
 };
 
 class SymbolItem {
@@ -47,6 +48,7 @@ private:
 
 	//for coude generation.Offset of base label.
 	int offset;
+	string conststring;
 public:
 	// get methods.
 	SymbolItem(string _name, TokenKind _kind, TokenType _type, int _value=0) {
@@ -100,6 +102,7 @@ public:
 	void setValue(int _value) { value = _value; }
 	void setSize(int _size) { size = _size; }
 	void setLevel(int _level) { level = _level; }
+	void setString(string _conststring) { conststring = _conststring; }
 	void setOffset(int _offset) { offset = _offset; }
 };
 

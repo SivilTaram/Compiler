@@ -104,3 +104,16 @@ SymbolSet* RootSymbolSet::getRootSet() {
 SymbolSet* RootSymbolSet::getCurrentSet() {
 	return current_table;
 }
+
+//get a label for those for or if statement
+SymbolItem* RootSymbolSet::genLabel() {
+	static int count = 1;
+	SymbolItem* label = NULL;
+	string name = "_L" + count;
+	label = new SymbolItem(name, TokenKind::LABEL, TokenType::notyp);
+	current_table->enterItem(label);
+	//the size of label is zero.
+	label->setSize(0);
+	count++;
+	return label;
+}

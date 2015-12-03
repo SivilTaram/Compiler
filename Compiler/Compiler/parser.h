@@ -26,7 +26,7 @@ public:
 	void parser();
 	//If the next symbol is equal to sym,then next;
 	//Else skip some words.
-	void except(Symbol sym);
+	void expect(Symbol sym);
 
 	SymbolItem* get(string _ident_name);
 	//skip some words until a valid follow set.
@@ -65,7 +65,7 @@ public:
 	void whileStatement();
 	//Handle the if statement;
 	void ifStatement();
-	Symbol condition();
+	void condition(SymbolItem* label);
 	//Handle compound statement
 	void compoundStatement();
 	//Handle the assign

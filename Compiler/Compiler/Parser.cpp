@@ -14,7 +14,7 @@ int level = 0;
 
 //except is suitable for one expression
 //or something shorter.
-void Parser::except(Symbol sym) {
+void Parser::expect(Symbol sym) {
 	if (match(sym)) {
 #ifdef DEBUG_EXCEPT
 		switch (sym)
@@ -239,11 +239,11 @@ void Parser::block() {
 				//appeared,but for those methods which appeared with essential,
 				//we must also read the first word for more accurate error message.
 				next();
-				//the loop is outside,and procDec can't have a loop.
+				//the loop is outside,and procDec can't have a loop
 				procDec();
 				block();
 				symbol_set.goback();
-				except(Symbol::semicolon);
+				expect(Symbol::semicolon);
 			}
 			else {
 				next();
@@ -251,10 +251,14 @@ void Parser::block() {
 				block();
 				//SymbolTable go back.
 				symbol_set.goback();
-				except(Symbol::semicolon);
+				expect(Symbol::semicolon);
 			}
 		}
+		//the begin of the block;
+		middle_code.gen(Opcode::BEGIN, (SymbolItem*)symbol_set.getCurrentSet());
 		compoundStatement();
+		//the end of the block;
+		middle_code.gen(Opcode::END, (SymbolItem*)symbol_set.getCurrentSet());
 	}
 	catch (eofexception) {
 		cout << "unexcepted file end." << endl;
@@ -283,7 +287,7 @@ void Parser::constDec() {
 				break;
 		}
 		// except ";" here.
-		except(Symbol::semicolon);
+		expect(Symbol::semicolon);
 	}
 	else
 		// I am confused by my index of errors. Oh my god....
@@ -367,7 +371,7 @@ void Parser::variableDec() {
 			Error::errorMessage(17, LineNo);
 			next();
 		}
-		except(Symbol::semicolon);
+		expect(Symbol::semicolon);
 		//identifier or others.
 		if (match(Symbol::ident))
 			continue;
@@ -487,11 +491,11 @@ void Parser::procDec() {
 					break;
 				}
 				// ';' and read next
-				except(Symbol::semicolon);
+				expect(Symbol::semicolon);
 			}
 		}
 		//except a ';'
-		except(Symbol::semicolon);
+		expect(Symbol::semicolon);
 	}
 	else {
 		//No.11 should define identity at the first of proc.After procedure.
@@ -528,7 +532,7 @@ void Parser::parameterList() {
 			next();
 			break;
 		}
-		except(Symbol::comma);
+		expect(Symbol::comma);
 	}
 	//basic type.
 	//kind means var para or normal para.
@@ -598,7 +602,7 @@ void Parser::funcDec() {
 					break;
 				}
 				// ';' and read next
-				except(Symbol::semicolon);
+				expect(Symbol::semicolon);
 			}
 		}
 		//the begin of the basic type.
@@ -623,7 +627,7 @@ void Parser::funcDec() {
 			Error::errorMessage(13, LineNo);
 			next();
 		}
-		except(Symbol::semicolon);
+		expect(Symbol::semicolon);
 	}
 	else {
 		//No.11 should define identity at the first of proc.After procedure.
@@ -718,14 +722,30 @@ SymbolItem* Parser::expression() {
 			minus = true;
 		next();
 	}
-	item();
-	////////////////////////////
-	//[FIXME]: symbolset      //
-	////////////////////////////
-	while (match(Symbol::plus) || match(Symbol::minus)) {
-		next();
-		item();
+	SymbolItem* first_item = item();
+	SymbolItem* temp = NULL;
+
+	if (minus) {
+		temp = symbol_set.genTemp(TokenKind::TEMP, first_item->getType());
+		// temp = - first_item;
+		middle_code.gen(Opcode::NEG, first_item, temp);
+		first_item = temp;
 	}
+
+	while (match(Symbol::plus) || match(Symbol::minus)) {
+		Opcode op = match(Symbol::plus) ? Opcode::ADD : Opcode::SUB;
+		next();
+		//the second item to calc
+		SymbolItem* second_item = item();
+		temp = symbol_set.genTemp(TokenKind::TEMP, first_item->getType());
+		if (first_item->getType() != second_item->getType())
+			temp->setType(TokenType::inttyp);
+		middle_code.gen(op, temp, first_item, second_item);
+		//for itearting.
+		first_item = temp;
+	}
+
+	return first_item;
 #ifdef DEBUG
 	level--;
 #endif // DEBUG
@@ -761,7 +781,7 @@ SymbolItem* Parser::factor(){
 			//////////////////////////////////////
 			// should a gen to store the address of array.
 			/////////////////////////////////////
-			except(Symbol::rsquare);
+			expect(Symbol::rsquare);
 		}
 		// func()
 		else if (match(Symbol::lparen))
@@ -783,7 +803,7 @@ SymbolItem* Parser::factor(){
 	else if(match(Symbol::lparen)) {
 		next();
 		SymbolItem * expr = expression();
-		except(Symbol::rparen);
+		expect(Symbol::rparen);
 		return expr;
 	}
 	else {
@@ -802,15 +822,15 @@ void Parser::selector(queue<string>* var_name) {
 	level++;
 	PRINT("selector");
 #endif // DEBUG
-	except(Symbol::arraysym);
+	expect(Symbol::arraysym);
 	if (match(Symbol::lsquare)) {
 		next();
-		except(Symbol::number);
+		expect(Symbol::number);
 		//array_size;
 		int array_size = current_token.getValue();
 		//enter the array_table;
-		except(Symbol::rsquare);
-		except(Symbol::ofsym);
+		expect(Symbol::rsquare);
+		expect(Symbol::ofsym);
 		TokenType temp;
 		if (match(Symbol::integersym) || match(Symbol::charsym))
 		{
@@ -841,26 +861,38 @@ void Parser::selector(queue<string>* var_name) {
 
 //Handle the call of procedure and function
 //<过程调用语句>  :: = <标识符>[<实在参数表>]
-void Parser::callPro(string ident) {
+void Parser::callPro(SymbolItem* proc) {
+	if (proc == NULL)
+		return;
+	else if (proc->getKind() != TokenKind::PROC) {
+		Error::errorMessage(57, LineNo);
+		return;
+	}
 	if (match(Symbol::lparen)) {
-
+		realParameter(proc);
 	}
 }
 
 //<函数调用语句>  :: = <标识符>[<实在参数表>]
-SymbolItem* Parser::callFunc(string ident) {
-
+SymbolItem* Parser::callFunc(SymbolItem* func) {
+	if (func == NULL)
+		return symbol_set.genTemp(TokenKind::TEMP, TokenType::notyp);
+	if (match(Symbol::lparen)) {
+		SymbolItem* return_value = realParameter(func);
+		//let the return_value to store the value of func.
+		middle_code.gen(Opcode::ASS,return_value, func);
+		return return_value;
+	}
 }
-
 
 //<实在参数表>    :: = '(' <实在参数> {, <实在参数>}')'
 //<实在参数>      :: = <表达式>
-void Parser::realParameter(string ident_name) {
+SymbolItem* Parser::realParameter(SymbolItem* func) {
 #ifdef DEBUG
 	level++;
 	PRINT("real Parameter");
 #endif // DEBUG
-	vector<SymbolItem*> args_list = symbol_set.getArgList(ident_name);
+	vector<SymbolItem*> form_parameters = symbol_set.getArgList(func->getName());
 	vector<SymbolItem*> real_parameters;
 	if (match(Symbol::lparen)) {
 		next();
@@ -872,17 +904,86 @@ void Parser::realParameter(string ident_name) {
 			next();
 		}
 	}
-	if (match(Symbol::rparen)) {
-		next();
-	}
-	else {
-		Error::errorMessage(30, LineNo);
-		next();
+	expect(Symbol::rparen);
+	//from the begin to the end
+	vector<SymbolItem*>::iterator form_iter = form_parameters.begin();
+	vector<SymbolItem*>::iterator real_iter = real_parameters.begin();
+
+	//we should check that the [var] should be a var 
+	//not a expr ,not a const , even a func!
+	while (real_iter!=real_parameters.end()) {
+		if (form_iter == real_parameters.end()) {
+			//FormParameters can't match the RealParameters.
+			Error::errorMessage(55, LineNo);
+			break;
+		}
+		else if (
+			(
+				(*form_iter)->getKind() == TokenKind::PARAVAR
+				//if the expression just procedure one,then can't temp;
+				&& 
+				(
+					   (*real_iter)->getKind() != TokenKind::VAR
+					&& (*real_iter)->getKind() != TokenKind::PARA
+					&& (*real_iter)->getKind() != TokenKind::PARAVAR)
+				)
+			||
+			(
+				(*form_iter)->getKind() == TokenKind::PARA
+				&& 
+				(
+					   (*real_iter)->getKind() != TokenKind::VAR
+					&& (*real_iter)->getKind() !=TokenKind::PARA
+					&& (*real_iter)->getKind() !=TokenKind::PARAVAR
+					&& (*real_iter)->getKind() !=TokenKind::CONST
+					&& (*real_iter)->getKind() !=TokenKind::TEMP
+					&& (*real_iter)->getKind() !=TokenKind::TEMP_ADD
+					&& (*real_iter)->getKind() !=TokenKind::TEMP_CON
+					)
+				)
+			)
+		{
+			//the real parameter's type can't match
+			Error::errorMessage(55, LineNo);
+		}
+		real_iter++;
+		form_iter++;
 	}
 
+	if (form_iter != form_parameters.end())
+	{
+		Error::errorMessage(55, LineNo);
+	}
+
+	real_iter = real_parameters.begin();
+	form_iter = form_parameters.begin();
+	while (real_iter != real_parameters.end()) {
+		if (form_iter != form_parameters.end()) {
+			if ((*form_iter)->getKind() == TokenKind::PARAVAR)
+				middle_code.gen(Opcode::PUSHVAR, (*real_iter));
+			else
+				middle_code.gen(Opcode::PUSH, (*real_iter));
+			form_iter++;
+		}
+		else {
+			break;
+		}
+		real_iter++;
+	}
 
 	//gen a call func quater.
 	//I want to generate a quater with push and var.
+
+	middle_code.gen(Opcode::CALL, func);
+
+	//if this is a function and we should return its value
+	//for transfering it to others.
+	if (func->getKind() == TokenKind::FUNC) {
+		SymbolItem* temp = symbol_set.genTemp(TokenKind::TEMP, func->getType());
+		return temp;
+	}
+	else
+		return NULL;
 
 #ifdef DEBUG
 	level--;
@@ -896,9 +997,13 @@ void Parser::forStatement() {
 	level++;
 	PRINT("for statement");
 #endif // DEBUG
-
-	except(Symbol::forsym);
+	SymbolItem* first_ident = NULL;
+	expect(Symbol::forsym);
 	if (match(Symbol::ident)) {
+		string ident_name = current_token.getName();
+		first_ident = get(ident_name);
+		if (first_ident->getKind() != TokenKind::VAR)
+			Error::errorMessage(57, LineNo);
 		next();
 	}
 	else {
@@ -906,30 +1011,59 @@ void Parser::forStatement() {
 		next();
 	}
 	// :=
-	except(Symbol::becomes);
+	expect(Symbol::becomes);
+	SymbolItem* initial_value = expression();
+	// first_ident = initial_value;
+	middle_code.gen(Opcode::ASS, first_ident, initial_value);
 
-	//expression
-	expression();
+	bool downto = false;
 
-	//downto | to
 	if (match(Symbol::downtosym) || match(Symbol::tosym)) {
-#ifdef DEBUG
-		PRINT("downto or to");
-#endif // DEBUG
-
+		downto = match(Symbol::downtosym) ? true : false;
 		next();
 	}
 	else {
-		//
 		Error::errorMessage(24, LineNo);
 		next();
 	}
-	// expression
-	expression();
-	// do
-	except(Symbol::dosym);
+	//expression
+	SymbolItem* last_value = expression();
+
+	SymbolItem* start_label = symbol_set.genLabel();
+	SymbolItem* loop_label = symbol_set.genLabel();
+	SymbolItem* end_loop_label = symbol_set.genLabel();
+	//JUMP like the BR in P-code
+	middle_code.gen(Opcode::JUMP, start_label);
+	middle_code.gen(Opcode::LABEL, loop_label);
+	//downto | to
+	expect(Symbol::dosym);
+	if (downto == true && first_ident != NULL)
+		middle_code.gen(Opcode::DEC, first_ident);
+	else if (downto == false && first_ident != NULL)
+		middle_code.gen(Opcode::INC, first_ident);
+
+	middle_code.gen(Opcode::BGR, end_loop_label, initial_value, last_value);
+	middle_code.gen(Opcode::LABEL, start_label);
+
 	// statement
 	statement();
+
+	middle_code.gen(Opcode::LABEL, end_loop_label);
+	/*
+	j start
+	
+	loop:
+	increment / decrement
+	
+	BGR endloop,initial_value,end_value
+
+	start:
+	<statement>
+	
+	endloop:
+	
+	*/
+
 
 #ifdef DEBUG
 	level--;
@@ -945,14 +1079,27 @@ void Parser::whileStatement() {
 	PRINT("while statement");
 #endif // DEBUG
 	// do
-	except(Symbol::dosym);
+
+	SymbolItem* loop = symbol_set.genLabel();
+	expect(Symbol::dosym);
+	middle_code.gen(Opcode::LABEL, loop);
 	statement();
-	except(Symbol::whilesym);
-	condition();
+	expect(Symbol::whilesym);
+	condition(loop);
+
 #ifdef DEBUG
 	level--;
 #endif // DEBUG
+	/*
 
+	(do once and just)
+loop:
+	<statement>
+
+	if meet the requirements,jump loop.
+
+endloop :
+	*/
 }
 
 //Handle the if statement;
@@ -962,41 +1109,69 @@ void Parser::ifStatement() {
 	level++;
 	PRINT("if statement");
 #endif // DEBUG
-	except(Symbol::ifsym);
-	condition();
+	expect(Symbol::ifsym);
+	SymbolItem* else_label = symbol_set.genLabel();
+	SymbolItem* endif_label = symbol_set.genLabel();
+	//the branch is set in condition.
+	condition(else_label);
 	if (match(Symbol::thensym)) {
-#ifdef DEBUG
-		PRINT("then");
-#endif // DEBUG
 		next();
+		statement();
+		middle_code.gen(Opcode::JUMP, endif_label);
 	}
-	statement();
 	if (match(Symbol::elsesym))
 	{
 #ifdef DEBUG
 		PRINT("else");
 #endif // DEBUG
+		middle_code.gen(Opcode::LABEL, else_label);
 		next();
 		statement();
 	}
 #ifdef DEBUG
 	level--;
 #endif // DEBUG
+	middle_code.gen(Opcode::LABEL, endif_label);
+	/*
+
+			condition;
+			Bxx then_label(if false,then false);
+			true statement;
+			JUMP endif_label;
+else_label: 
+			false_statement;
+endif_label:
+
+	
+	*/
 
 }
 
 //<条件>       ::= <表达式><关系运算符><表达式>
 //<关系运算符> ::= <|<=|>|>= |=|<>
-void Parser::condition() {
-	expression();
-	// <= 
-	if (match(Symbol::leq) || match(Symbol::lss) || match(Symbol::gtr) || match(Symbol::geq) || match(Symbol::eql) || match(Symbol::neq))
+//if success,then we should generate
+void Parser::condition(SymbolItem* else_label) {
+	//表达式
+	SymbolItem* src1 = expression();
+	Symbol op = Symbol::nullsym;
+	if (match(Symbol::leq) || match(Symbol::lss) || match(Symbol::gtr) || match(Symbol::geq) || match(Symbol::eql) || match(Symbol::neq)) {
+		op = current_token.getType();
 		next();
+		//表达式
+		SymbolItem* src2 = expression();
+		Opcode op_code =
+			(op == Symbol::leq) ? Opcode::BLE :
+			(op == Symbol::lss) ? Opcode::BLS :
+			(op == Symbol::gtr) ? Opcode::BGR :
+			(op == Symbol::geq) ? Opcode::BGE :
+			(op == Symbol::eql) ? Opcode::BEQ :
+			(op == Symbol::neq) ? Opcode::BNE : Opcode::JUMP;
+		middle_code.gen(op_code, else_label,src1,src2);
+	}
 	else {
 		Error::errorMessage(26, LineNo);
 		next();
 	}
-	expression();
 }
 
 //Handle compound statement
@@ -1006,7 +1181,7 @@ void Parser::compoundStatement() {
 	level++;
 	PRINT("compound Statement");
 #endif // DEBUG
-	except(Symbol::beginsym);
+	expect(Symbol::beginsym);
 	statement();
 	while (1) {
 		// except ';'
@@ -1039,19 +1214,61 @@ void Parser::assignment(SymbolItem* ident) {
 	level++;
 	PRINT("assignment");
 #endif // DEBUG
+
+	SymbolItem* dst = ident;
+	SymbolItem* src1 = NULL;
+	SymbolItem* src2 = NULL;
+
+	//must be ":=" or "[" 
 	if (match(Symbol::lsquare)) {
 		next();
-		//表达式
-		SymbolItem* expr = expression();
+		//the index of the array.
+		src1 = expression();
 		// ]
-		except(Symbol::rsquare);
+		if (dst != NULL && dst->getKind() != TokenKind::ARRAY)
+			Error::errorMessage(46, LineNo);
+
+		//There we can give out a error which belong to the type of out of bound.
+		expect(Symbol::rsquare);
+		expect(Symbol::becomes);
+		// dst[src1] := src2;
+		src2 = expression();
+		//the type of the src2 is different from the type of the dst.
+		if (src2->getType() != dst->getType())
+			Error::errorMessage(47, LineNo);
+		SymbolItem *addr = symbol_set.genTemp(TokenKind::TEMP_ADD, dst->getType());
+		// fill the addr with the base address of array and the offset.
+		// addr = ADDR(dst) + src1;
+		middle_code.gen(Opcode::ARRADD, addr, dst, src1);
+		// [addr] = src2;
+		middle_code.gen(Opcode::ASSADD, addr, src2);
 	}
 	// :=
-	except(Symbol::becomes);
-	if (ident->getKind() == TokenKind::FUNC)
+	else {
+		expect(Symbol::becomes);
+		// dst := src1;
+		src1 = expression();
+		if (dst != NULL && (dst->getKind() == TokenKind::VAR
+			|| dst->getKind() == TokenKind::PARA
+			|| dst->getKind() == TokenKind::PARAVAR)) {
+			if (dst->getType() != src1->getType())
+				Error::errorMessage(48, LineNo);
+			middle_code.gen(Opcode::ASS, dst, src1);
+		}
+		// (a func)dst := src1;
+		else if (dst != NULL && (dst->getKind() == TokenKind::FUNC)) {
+			if (!symbol_set.findProc(dst->getName())) {
+				// no func!
+				Error::errorMessage(52, LineNo);
+			}
+			else {
+				if (dst->getType() != src1->getType())
+					Error::errorMessage(47, LineNo);
+				middle_code.gen(Opcode::ASS, dst, src1);
+			}
 
-	SymbolItem* expr_2 = expression();
-
+		}
+	}
 #ifdef DEBUG
 	level--;
 #endif // DEBUG
@@ -1099,8 +1316,8 @@ void Parser::readStatement() {
 	level++;
 	PRINT("read statement");
 #endif // DEBUG
-	except(Symbol::readsym);
-	except(Symbol::lparen);
+	expect(Symbol::readsym);
+	expect(Symbol::lparen);
 	vector<SymbolItem*> args;
 	while (1) {
 		if (match(Symbol::ident)) {
@@ -1119,13 +1336,16 @@ void Parser::readStatement() {
 	}
 	vector<SymbolItem*>::iterator it = args.begin();
 	while (it != args.end()) {
-
+		if ((*it) != NULL) {
+			middle_code.gen(Opcode::READ, (*it));
+		}
+		it++;
 	}
 	//[FIXME] enter the symbol set.
 	//while (it != args.end()) {
 
 	//}
-	except(Symbol::rparen);
+	expect(Symbol::rparen);
 #ifdef DEBUG
 	level--;
 #endif // DEBUG
@@ -1145,7 +1365,7 @@ void Parser::writeStatement() {
 	else {
 		Error::errorMessage(31,LineNo);
 	}
-	except(Symbol::lparen);
+	expect(Symbol::lparen);
 	// "
 	if (match(Symbol::strconst)) {
 #ifdef DEBUG
@@ -1153,18 +1373,23 @@ void Parser::writeStatement() {
 		PRINT("str const");
 		level--;
 #endif // DEBUG
+		SymbolItem* temp = symbol_set.genTemp(TokenKind::TEMP_CON,TokenType::stringtyp);
+		temp->setString(current_token.getName());
+		middle_code.gen(Opcode::WRITE, temp);
 
 		next();
 		if (match(Symbol::comma))
 		{
 			next();
-			expression();
+			// the write_arg can be const,or var or others.
+			SymbolItem* write_arg = expression();
+			middle_code.gen(Opcode::WRITE, write_arg);
 		}
-		except(Symbol::rparen);
+		expect(Symbol::rparen);
 	}
 	else{
-		expression();
-		except(Symbol::rparen);
+		SymbolItem* write_arg = expression();
+		middle_code.gen(Opcode::WRITE, write_arg);
 	}
 
 #ifdef DEBUG
@@ -1179,4 +1404,12 @@ void Parser::writeStatement() {
 // Have done for QuaterInstr                //
 // factor
 // item
+// assignment
+// forstatement
+// ifstatement
+// readstatement
+// writestatement
+// condition
+// realparameters
+// assignment
 /********************************************/

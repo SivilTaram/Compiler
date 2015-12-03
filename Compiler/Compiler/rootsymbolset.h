@@ -9,6 +9,7 @@ public:
 	SymbolItem* search(string _name); 
 	SymbolItem* insert(string _name, TokenKind _kind, TokenType _type,int _value=0);
 	SymbolItem* genTemp(TokenKind _kind,TokenType _type);
+	SymbolItem* genLabel();
 
 	SymbolSet* getRootSet();
 	SymbolSet* getCurrentSet();
