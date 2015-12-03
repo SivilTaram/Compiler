@@ -1113,7 +1113,8 @@ void Parser::ifStatement() {
 	SymbolItem* else_label = symbol_set.genLabel();
 	SymbolItem* endif_label = symbol_set.genLabel();
 	//the branch is set in condition.
-	condition(else_label);
+	//IMPORTANT:if false
+	condition(else_label,false);
 	if (match(Symbol::thensym)) {
 		next();
 		statement();
@@ -1150,7 +1151,7 @@ endif_label:
 //<条件>       ::= <表达式><关系运算符><表达式>
 //<关系运算符> ::= <|<=|>|>= |=|<>
 //if success,then we should generate
-void Parser::condition(SymbolItem* else_label) {
+void Parser::condition(SymbolItem* else_label,bool _ifsuccess=true) {
 	//表达式
 	SymbolItem* src1 = expression();
 	Symbol op = Symbol::nullsym;
@@ -1159,13 +1160,31 @@ void Parser::condition(SymbolItem* else_label) {
 		next();
 		//表达式
 		SymbolItem* src2 = expression();
-		Opcode op_code =
-			(op == Symbol::leq) ? Opcode::BLE :
-			(op == Symbol::lss) ? Opcode::BLS :
-			(op == Symbol::gtr) ? Opcode::BGR :
-			(op == Symbol::geq) ? Opcode::BGE :
-			(op == Symbol::eql) ? Opcode::BEQ :
-			(op == Symbol::neq) ? Opcode::BNE : Opcode::JUMP;
+		Opcode op_code;
+			if(_ifsuccess) {
+				op_code = 
+					(op == Symbol::leq) ? Opcode::BLE :
+					(op == Symbol::lss) ? Opcode::BLS :
+					(op == Symbol::gtr) ? Opcode::BGR :
+					(op == Symbol::geq) ? Opcode::BGE :
+					(op == Symbol::eql) ? Opcode::BEQ :
+					(op == Symbol::neq) ? Opcode::BNE : Opcode::JUMP;
+			}
+			else {
+				op_code =
+					//<= false >
+					(op == Symbol::leq) ? Opcode::BGR :
+					//< false >=
+					(op == Symbol::lss) ? Opcode::BGE :
+					//> false <=
+					(op == Symbol::gtr) ? Opcode::BLE :
+					//>= flase <
+					(op == Symbol::geq) ? Opcode::BLS :
+					//== false <>
+					(op == Symbol::eql) ? Opcode::BNE :
+					//<> false ==
+					(op == Symbol::neq) ? Opcode::BEQ : Opcode::JUMP;
+			}
 		middle_code.gen(op_code, else_label,src1,src2);
 	}
 	else {

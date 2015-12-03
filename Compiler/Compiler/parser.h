@@ -65,7 +65,7 @@ public:
 	void whileStatement();
 	//Handle the if statement;
 	void ifStatement();
-	void condition(SymbolItem* label);
+	void condition(SymbolItem* label,bool _ifsuccess);
 	//Handle compound statement
 	void compoundStatement();
 	//Handle the assign
