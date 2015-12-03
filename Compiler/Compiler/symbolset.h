@@ -75,6 +75,8 @@ public:
 		case TokenKind::VAR:return "var";
 		case TokenKind::TEMP:return "temp";
 		case TokenKind::LABEL:return "label";
+		case TokenKind::TEMP_ADD:return "temp_add";
+		case TokenKind::TEMP_CON:return "temp_const";
 		default: return "unknown";
 		}
 	}
@@ -99,6 +101,9 @@ public:
 	void setLevel(int _level) { level = _level; }
 	void setString(string _conststring) { conststring = _conststring; }
 	void setOffset(int _offset) { offset = _offset; }
+
+
+	void printData();
 };
 
 class SymbolPro {
@@ -151,6 +156,8 @@ public:
 	SymbolSet* enterProc(SymbolItem* _proc);
 
 	vector<SymbolItem*> getArgList();
+	
+	void printData();
 
 	//get the table's mapping item.
 

@@ -11,6 +11,7 @@ public:
 	SymbolItem* genTemp(TokenKind _kind,TokenType _type);
 	SymbolItem* genLabel();
 	vector<SymbolItem*> getArgList(string _name);
+	void printSymbolSet();
 
 	SymbolSet* getRootSet();
 	SymbolSet* getCurrentSet();

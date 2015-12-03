@@ -72,7 +72,7 @@ SymbolSet* RootSymbolSet::serachTable(string _name) {
 	SymbolSet *table = NULL;
 	while (temp != NULL) {
 		table = temp->getProcTable(_name);
-		if (table == NULL)
+		if (table != NULL)
 			break;
 		temp = temp->father_table;
 	}
@@ -126,4 +126,8 @@ vector<SymbolItem*> RootSymbolSet::getArgList(string _name)
 {
 	SymbolSet* table = serachTable(_name);
 	return table->getArgList();
+}
+
+void RootSymbolSet::printSymbolSet() {
+	root_table->printData();
 }

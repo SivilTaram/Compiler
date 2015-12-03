@@ -186,13 +186,13 @@ void Parser::test(symset s1,symset s2,int error_code) {
 };
 
 void Parser::translate() {
+	symbol_set.printSymbolSet();
 	middle_code.printMiddleCode();
 }
 
 /*
 Start parse.
-*/
-void Parser::parser() {
+*/void Parser::parser() {
 	next();
 	block();
 	if (!match(Symbol::period))

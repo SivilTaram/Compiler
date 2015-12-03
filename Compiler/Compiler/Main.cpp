@@ -1,8 +1,8 @@
 #include "parser.h"
 
 
-int main() {
-	Parser* parser_var = new Parser("test/for.txt");
+ int main() {
+	Parser* parser_var = new Parser("test/call.txt");
 	parser_var->parser();
 	parser_var->translate();
 	//Parser* parser_const = new Parser("test/const.txt");
