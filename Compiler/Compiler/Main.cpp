@@ -2,8 +2,8 @@
 
 
 int main() {
-	//Parser* parser_var = new Parser("test/var.txt");
-	//parser_var->parser();
+	Parser* parser_var = new Parser("test/var.txt");
+	parser_var->parser();
 	//Parser* parser_const = new Parser("test/const.txt");
 	//parser_const->parser();
 	//Parser* parser_compound = new Parser("test/compoundstate.txt");
@@ -24,8 +24,8 @@ int main() {
 	//parser_while->parser();
 	//* parser_func = new Parser("test/function.txt");
 	//parser_func->parser();
-	Parser* parser_test= new Parser("test/13061193_test.txt");
-	parser_test->parser(); 
+	//Parser* parser_test= new Parser("test/13061193_test.txt");
+	//parser_test->parser(); 
 	//Parser* parser_proc = new Parser("test/procedure.txt");
 	//parser_proc->parser();
 	//Parser* parser_call = new Parser("test/call.txt");

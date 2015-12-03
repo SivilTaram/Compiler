@@ -183,6 +183,10 @@ void Parser::test(symset s1,symset s2,int error_code) {
 
 };
 
+void Parser::translate() {
+	middle_code.printMiddleCode();
+}
+
 /*
 Start parse.
 */
@@ -904,91 +908,91 @@ SymbolItem* Parser::realParameter(SymbolItem* func) {
 			next();
 		}
 	}
-	expect(Symbol::rparen);
-	//from the begin to the end
-	vector<SymbolItem*>::iterator form_iter = form_parameters.begin();
-	vector<SymbolItem*>::iterator real_iter = real_parameters.begin();
+	//expect(Symbol::rparen);
+	////from the begin to the end
+	//vector<SymbolItem*>::iterator form_iter = form_parameters.begin();
+	//vector<SymbolItem*>::iterator real_iter = real_parameters.begin();
 
 	//we should check that the [var] should be a var 
 	//not a expr ,not a const , even a func!
-	while (real_iter!=real_parameters.end()) {
-		if (form_iter == real_parameters.end()) {
-			//FormParameters can't match the RealParameters.
-			Error::errorMessage(55, LineNo);
-			break;
-		}
-		else if (
-			(
-				(*form_iter)->getKind() == TokenKind::PARAVAR
-				//if the expression just procedure one,then can't temp;
-				&& 
-				(
-					   (*real_iter)->getKind() != TokenKind::VAR
-					&& (*real_iter)->getKind() != TokenKind::PARA
-					&& (*real_iter)->getKind() != TokenKind::PARAVAR)
-				)
-			||
-			(
-				(*form_iter)->getKind() == TokenKind::PARA
-				&& 
-				(
-					   (*real_iter)->getKind() != TokenKind::VAR
-					&& (*real_iter)->getKind() !=TokenKind::PARA
-					&& (*real_iter)->getKind() !=TokenKind::PARAVAR
-					&& (*real_iter)->getKind() !=TokenKind::CONST
-					&& (*real_iter)->getKind() !=TokenKind::TEMP
-					&& (*real_iter)->getKind() !=TokenKind::TEMP_ADD
-					&& (*real_iter)->getKind() !=TokenKind::TEMP_CON
-					)
-				)
-			)
-		{
-			//the real parameter's type can't match
-			Error::errorMessage(55, LineNo);
-		}
-		real_iter++;
-		form_iter++;
-	}
+	//while (real_iter!=real_parameters.end()) {
+	//	if (form_iter == real_parameters.end()) {
+	//		//FormParameters can't match the RealParameters.
+	//		Error::errorMessage(55, LineNo);
+	//		break;
+	//	}
+	//	else if (
+	//		(
+	//			(*form_iter)->getKind() == TokenKind::PARAVAR
+	//			//if the expression just procedure one,then can't temp;
+	//			&& 
+	//			(
+	//				   (*real_iter)->getKind() != TokenKind::VAR
+	//				&& (*real_iter)->getKind() != TokenKind::PARA
+	//				&& (*real_iter)->getKind() != TokenKind::PARAVAR)
+	//			)
+	//		||
+	//		(
+	//			(*form_iter)->getKind() == TokenKind::PARA
+	//			&& 
+	//			(
+	//				   (*real_iter)->getKind() !=TokenKind::VAR
+	//				&& (*real_iter)->getKind() !=TokenKind::PARA
+	//				&& (*real_iter)->getKind() !=TokenKind::PARAVAR
+	//				&& (*real_iter)->getKind() !=TokenKind::CONST
+	//				&& (*real_iter)->getKind() !=TokenKind::TEMP
+	//				&& (*real_iter)->getKind() !=TokenKind::TEMP_ADD
+	//				&& (*real_iter)->getKind() !=TokenKind::TEMP_CON
+	//				)
+	//			)
+	//		)
+	//	{
+	//		//the real parameter's type can't match
+	//		Error::errorMessage(55, LineNo);
+	//	}
+	//	real_iter++;
+	//	form_iter++;
+	//}
 
-	if (form_iter != form_parameters.end())
-	{
-		Error::errorMessage(55, LineNo);
-	}
+	//if (form_iter != form_parameters.end())
+	//{
+	//	Error::errorMessage(55, LineNo);
+	//}
 
-	real_iter = real_parameters.begin();
-	form_iter = form_parameters.begin();
-	while (real_iter != real_parameters.end()) {
-		if (form_iter != form_parameters.end()) {
-			if ((*form_iter)->getKind() == TokenKind::PARAVAR)
-				middle_code.gen(Opcode::PUSHVAR, (*real_iter));
-			else
-				middle_code.gen(Opcode::PUSH, (*real_iter));
-			form_iter++;
-		}
-		else {
-			break;
-		}
-		real_iter++;
-	}
+	//real_iter = real_parameters.begin();
+	//form_iter = form_parameters.begin();
+	//while (real_iter != real_parameters.end()) {
+	//	if (form_iter != form_parameters.end()) {
+	//		if ((*form_iter)->getKind() == TokenKind::PARAVAR)
+	//			middle_code.gen(Opcode::PUSHVAR, (*real_iter));
+	//		else
+	//			middle_code.gen(Opcode::PUSH, (*real_iter));
+	//		form_iter++;
+	//	}
+	//	else {
+	//		break;
+	//	}
+	//	real_iter++;
+	//}
 
-	//gen a call func quater.
-	//I want to generate a quater with push and var.
+	////gen a call func quater.
+	////I want to generate a quater with push and var.
 
-	middle_code.gen(Opcode::CALL, func);
+	//middle_code.gen(Opcode::CALL, func);
 
-	//if this is a function and we should return its value
-	//for transfering it to others.
-	if (func->getKind() == TokenKind::FUNC) {
-		SymbolItem* temp = symbol_set.genTemp(TokenKind::TEMP, func->getType());
-		return temp;
-	}
-	else
-		return NULL;
+	////if this is a function and we should return its value
+	////for transfering it to others.
+	//if (func->getKind() == TokenKind::FUNC) {
+	//	SymbolItem* temp = symbol_set.genTemp(TokenKind::TEMP, func->getType());
+	//	return temp;
+	//}
+	//else
+	//	return NULL;
 
 #ifdef DEBUG
 	level--;
 #endif // DEBUG
-
+	return NULL;
 }
 //Handle the for statement
 //<for循环语句>:: = for <标识符>  : = <表达式> （downto | to） <表达式> do <语句> //步长为1
@@ -1034,7 +1038,7 @@ void Parser::forStatement() {
 	SymbolItem* end_loop_label = symbol_set.genLabel();
 	//JUMP like the BR in P-code
 	middle_code.gen(Opcode::JUMP, start_label);
-	middle_code.gen(Opcode::LABEL, loop_label);
+	middle_code.gen(Opcode::SETLABEL, loop_label);
 	//downto | to
 	expect(Symbol::dosym);
 	if (downto == true && first_ident != NULL)
@@ -1043,12 +1047,12 @@ void Parser::forStatement() {
 		middle_code.gen(Opcode::INC, first_ident);
 
 	middle_code.gen(Opcode::BGR, end_loop_label, initial_value, last_value);
-	middle_code.gen(Opcode::LABEL, start_label);
+	middle_code.gen(Opcode::SETLABEL, start_label);
 
 	// statement
 	statement();
 
-	middle_code.gen(Opcode::LABEL, end_loop_label);
+	middle_code.gen(Opcode::SETLABEL, end_loop_label);
 	/*
 	j start
 	
@@ -1082,11 +1086,10 @@ void Parser::whileStatement() {
 
 	SymbolItem* loop = symbol_set.genLabel();
 	expect(Symbol::dosym);
-	middle_code.gen(Opcode::LABEL, loop);
+	middle_code.gen(Opcode::SETLABEL, loop);
 	statement();
 	expect(Symbol::whilesym);
-	condition(loop);
-
+	condition(loop,true);
 #ifdef DEBUG
 	level--;
 #endif // DEBUG
@@ -1125,14 +1128,14 @@ void Parser::ifStatement() {
 #ifdef DEBUG
 		PRINT("else");
 #endif // DEBUG
-		middle_code.gen(Opcode::LABEL, else_label);
+		middle_code.gen(Opcode::SETLABEL, else_label);
 		next();
 		statement();
 	}
 #ifdef DEBUG
 	level--;
 #endif // DEBUG
-	middle_code.gen(Opcode::LABEL, endif_label);
+	middle_code.gen(Opcode::SETLABEL, endif_label);
 	/*
 
 			condition;

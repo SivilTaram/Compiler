@@ -117,3 +117,9 @@ SymbolItem* RootSymbolSet::genLabel() {
 	count++;
 	return label;
 }
+
+vector<SymbolItem*> RootSymbolSet::getArgList(string _name)
+{
+	SymbolSet* table = serachTable(_name);
+	return table->getArgList();
+}

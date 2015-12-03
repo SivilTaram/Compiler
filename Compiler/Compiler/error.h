@@ -1,5 +1,4 @@
-#ifndef ERROR_H
-#define ERROR_H
+#pragma once
 
 #include <string>
 #include <iostream>
@@ -18,5 +17,3 @@ private:
 	static vector<string> error_messages;
 };
 
-
-#endif

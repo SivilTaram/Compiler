@@ -30,7 +30,7 @@ enum Opcode {
 	ARRADD,
 
 	JUMP,
-	LABEL,
+	SETLABEL,
 	READ,
 	WRITE,
 	BEGIN,

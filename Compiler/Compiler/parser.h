@@ -1,12 +1,12 @@
-#ifndef PARSER_H
-#define PARSER_H
+#pragma once
+
+#include <queue>
+#include <set>
 #include "token.h"
 #include "symbolset.h"
 #include "lexer.h"
 #include "rootsymbolset.h"
 #include "middlecode.h"
-#include <queue>
-#include <set>
 
 #define DEBUG
 
@@ -24,6 +24,7 @@ public:
 	bool match(Symbol sym);
 	void next();
 	void parser();
+	void translate();
 	//If the next symbol is equal to sym,then next;
 	//Else skip some words.
 	void expect(Symbol sym);
@@ -138,5 +139,3 @@ class eofexception : public exception {
 <×ÖÄ¸>          ::=   a|b|c|d¡­x|y|z |A|B¡­|Z
 <Êý×Ö>          ::=   0|1|2|3¡­8|9
 */
-
-#endif

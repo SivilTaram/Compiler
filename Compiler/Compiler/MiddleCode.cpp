@@ -1,3 +1,4 @@
+
 #include"middlecode.h"
 
 QuaterInstr* MiddleCode::gen(Opcode _op, SymbolItem* _des, SymbolItem* _src1, SymbolItem* _src2) {

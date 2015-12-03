@@ -1,5 +1,4 @@
-#ifndef SYMBOLSET_H
-#define SYMBOLSET_H
+#pragma once
 
 #include <string>
 #include <ctype.h>
@@ -7,13 +6,9 @@
 #include <assert.h>
 #include <array>     
 
-#define ARGLIST (vector<SymbolItem*>) 
 #define MAX_LEVEL (3+1)
 
 using namespace std;
-
-typedef map<string, SymbolItem*> SYMBOLMAP;
-typedef map<string, SymbolSet*> TABLEMAP;
 
 enum TokenKind {
 	CONST,// .data
@@ -139,23 +134,23 @@ public:
 class SymbolSet{
 public:
 	// the pointer to the father of a procedure or a function.
-	SymbolSet * father_table;
+	SymbolSet* father_table;
 
 	//create and the delete method.
 	SymbolSet(SymbolItem* _proc, SymbolSet* _father, int _level);
 
 	//get the item from the table according to the name.
-	SymbolItem * getItem(string _name);
+	SymbolItem* getItem(string _name);
 	bool enterItem(SymbolItem* _item);
 
 	//get the table the proc mapping to.
 
 	SymbolItem* getProcItem();
-	SymbolSet * getProcTable(string _procname);
+	SymbolSet* getProcTable(string _procname);
 	string		getProcName();
-	SymbolSet * enterProc(SymbolItem* _proc);
+	SymbolSet* enterProc(SymbolItem* _proc);
 
-	ARGLIST getArgList();
+	vector<SymbolItem*> getArgList();
 
 	//get the table's mapping item.
 
@@ -174,12 +169,11 @@ public:
 private:
 
 	SymbolItem* proc;
-	ARGLIST local_list;
-	SYMBOLMAP symbol_map;
+	vector<SymbolItem*> local_list;
+	map<string, SymbolItem*> symbol_map;
 	//store the names of current level function or procedure.
-	TABLEMAP table_map;
+	map<string, SymbolSet*> table_map;
 	int level;
 	/*int stack_size;
 	int args_size;*/
 };
-#endif

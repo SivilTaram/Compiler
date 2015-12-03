@@ -11,7 +11,7 @@ SymbolSet::SymbolSet(SymbolItem* _proc, SymbolSet* _father, int _level) {
 
 //get the item from the symboltable using _name;
 SymbolItem* SymbolSet::getItem(string _name) {
-	SYMBOLMAP::iterator symbol_it = symbol_map.find(_name);
+	map<string, SymbolItem*>::iterator symbol_it = symbol_map.find(_name);
 	//if found,we can assert that the name existed.
 	if (symbol_it != symbol_map.end())
 		return symbol_map[_name];
@@ -29,6 +29,7 @@ bool SymbolSet::enterItem(SymbolItem * _item) {
 		_item->setLevel(level);
 		local_list.push_back(_item);
 		symbol_map[item_name] = _item;
+		return true;
 	}
 	else
 		return false;
@@ -41,7 +42,7 @@ SymbolItem* SymbolSet::getProcItem() {
 
 //get the procedure or function's name mapping SymbolSet.
 SymbolSet* SymbolSet::getProcTable(string _name) {
-	TABLEMAP::iterator it_table = table_map.find(_name);
+	map<string, SymbolSet*>::iterator it_table = table_map.find(_name);
 	if (it_table != table_map.end())
 		// the it_table's second of <string,SYmbolSet*> 
 		return it_table->second;
@@ -65,8 +66,8 @@ vector<SymbolItem*> SymbolSet::getArgList() {
 	// but when I replaced it with ARGLIST.It didn't work!
 	// Why?????
 	while (it_args != local_list.end()) {
-		if ((*it_args)->getKind == TokenKind::PARA
-			|| (*it_args)->getKind == TokenKind::PARAVAR)
+		if ((*it_args)->getKind() == TokenKind::PARA
+			|| (*it_args)->getKind() == TokenKind::PARAVAR)
 			args.push_back(*it_args);
 		it_args++;
 	}

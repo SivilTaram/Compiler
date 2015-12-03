@@ -37,7 +37,7 @@ string QuaterInstr::printOpcode() {
 	case ASS:return "ASS\t";
 	case ASSADD:return "ASSADD\t";
 	case JUMP:return "JUMP\t";
-	case LABEL:return "LABEL\t";
+	case SETLABEL:return "SETLABEL\t";
 	case READ:return "READ\t";
 	case WRITE:return "WRITE\t";
 	case BEGIN:return "BEGIN\t";
@@ -47,6 +47,7 @@ string QuaterInstr::printOpcode() {
 	default:
 		break;
 	}
+	return "NULL\t";
 }
 
 QuaterInstr::QuaterInstr(Opcode _op, SymbolItem* _des, SymbolItem* _src1, SymbolItem* _src2) {

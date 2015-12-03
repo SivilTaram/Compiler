@@ -1,5 +1,4 @@
-#ifndef TOKEN_H
-#define TOKEN_H
+#pragma once
 
 #include <iostream>
 #include <map>
@@ -91,5 +90,3 @@ public:
 	int getValue();
 };
 
-
-#endif

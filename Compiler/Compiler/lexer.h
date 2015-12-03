@@ -1,5 +1,4 @@
-#ifndef LEXER_H
-#define LEXER_H
+#pragma once
 
 #define LINEMAX 1024
 #define NMAX 20
@@ -27,4 +26,3 @@ public:
 	Token getsym();
 	void initialReserved();
 };
-#endif
