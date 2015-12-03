@@ -3,6 +3,8 @@
 #include "error.h"
 #include <queue>
 
+//#define DEBUG_NEXT
+
 #define LineNo (current_token.getLineNo()+1)
 #define PRINT(x) cout << LineNo <<" :"; for(int i=0;i<level;i++){cout<< "- ";} cout << x << endl
 //#define DEBUG_NEXT
@@ -138,16 +140,16 @@ void Parser::next() throw(exception){
 	if (current_token.getType() == Symbol::eofsym)
 		throw eofexception();
 #ifdef DEBUG_NEXT
-	if (current_token.type==Symbol::charconst)
-		cout << "'" << current_token.ident_name << "'";
-	else if(current_token.type==Symbol::strconst)
-		cout << "\"" << current_token.ident_name << "\"";
-	else if (current_token.type == Symbol::number)
-		cout << current_token.num_value << " ";
-	else if (current_token.type == Symbol::ident)
-		cout << current_token.type << " name: " << current_token.ident_name << " ";
+	if (current_token.getType()==Symbol::charconst)
+		cout << "'" << current_token.getName() << "'" <<endl;
+	else if(current_token.getType()==Symbol::strconst)
+		cout << "\"" << current_token.getValue() << "\"" <<endl;
+	else if (current_token.getType() == Symbol::number)
+		cout << current_token.getValue() << " " <<endl;
+	else if (current_token.getType() == Symbol::ident)
+		cout << current_token.getType() << " name: " << current_token.getName() << " " <<endl;
 	else
-		cout << current_token.type << endl;
+		cout << current_token.getType() << endl;
 #endif
 };
 

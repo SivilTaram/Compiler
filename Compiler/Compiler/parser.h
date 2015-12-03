@@ -8,7 +8,7 @@
 #include "rootsymbolset.h"
 #include "middlecode.h"
 
-#define DEBUG
+//#define DEBUG
 
 typedef set<Symbol> symset;
 

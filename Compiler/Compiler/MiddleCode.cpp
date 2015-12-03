@@ -13,6 +13,7 @@ void MiddleCode::printMiddleCode() {
 	vector<QuaterInstr*>::iterator it = middle_codes.begin();
 	while (it != middle_codes.end()) {
 		(*it)->printQuater();
+		it++;
 		cout << endl;
 	}
 }

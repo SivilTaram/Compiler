@@ -5,19 +5,22 @@ void QuaterInstr::printQuater() {
 	string des_name = "";
 	string src1_name = "";
 	string src2_name = "";
-	if (des != NULL)
-		des_name = des->getName() + "\t,";
-	else
-		des_name = "-\t,";
-	if (src1 != NULL)
-		src1_name = src1->getName() + "\t,";
-	else
-		src1_name = "-\t,";
-	if (src2 != NULL)
-		src2_name = src2->getName() + "\t;";
-	else
-		src2_name = "-\t;";
-
+	if (op != Opcode::BEGIN && op != Opcode::END)
+	{
+		if (des != NULL)
+			des_name = des->getKind() + ",";
+		else
+			des_name = "";
+		if (src1 != NULL)
+			src1_name = src1->getKind() + ",";
+		else
+			src1_name = "";
+		if (src2 != NULL)
+			src2_name = src2->getKind() + ";";
+		else
+			src2_name = "";
+	}
+	cout << output << des_name << src1_name << src2_name;
 }
 
 string QuaterInstr::printOpcode() {
@@ -44,6 +47,8 @@ string QuaterInstr::printOpcode() {
 	case END:return "END\t";
 	case PUSH:return "PUSH\t";
 	case RETURN:return "RETURN\t";
+	case INC:return "INC\t";
+	case DEC:return "DEC\t";
 	default:
 		break;
 	}

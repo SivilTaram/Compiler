@@ -2,8 +2,9 @@
 
 
 int main() {
-	Parser* parser_var = new Parser("test/var.txt");
+	Parser* parser_var = new Parser("test/for.txt");
 	parser_var->parser();
+	parser_var->translate();
 	//Parser* parser_const = new Parser("test/const.txt");
 	//parser_const->parser();
 	//Parser* parser_compound = new Parser("test/compoundstate.txt");

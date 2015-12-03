@@ -1,6 +1,6 @@
 
 #include "rootsymbolset.h"
-
+#include <sstream>
 RootSymbolSet::RootSymbolSet() {
 	SymbolItem* root_item = new SymbolItem("root",TokenKind::PROC,TokenType::voidtyp);
 	//allocate a new table for root function.
@@ -50,8 +50,10 @@ SymbolItem* RootSymbolSet::genTemp(TokenKind _kind,TokenType _type) {
 	SymbolItem *temp = NULL;
 	//the temp's count for not repeating.
 	static int temp_count = 1;
-	string name = "!t" + temp_count;
-	temp = new SymbolItem(name, _kind, _type);
+	//string name = "!t" + temp_count;
+	stringstream name;
+	name << "!TEMP" << temp_count;
+	temp = new SymbolItem(name.str(), _kind, _type);
 	current_table->enterItem(temp);
 	temp_count++;
 	return temp;
@@ -109,8 +111,10 @@ SymbolSet* RootSymbolSet::getCurrentSet() {
 SymbolItem* RootSymbolSet::genLabel() {
 	static int count = 1;
 	SymbolItem* label = NULL;
-	string name = "_L" + count;
-	label = new SymbolItem(name, TokenKind::LABEL, TokenType::notyp);
+	stringstream name;
+	name<< "-L-" << count;
+	//string name = "_L" + count;
+	label = new SymbolItem(name.str(), TokenKind::LABEL, TokenType::notyp);
 	current_table->enterItem(label);
 	//the size of label is zero.
 	label->setSize(0);
