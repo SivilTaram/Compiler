@@ -17,3 +17,9 @@ void MiddleCode::printMiddleCode() {
 		cout << endl;
 	}
 }
+
+//.asciiz
+//.data for print 
+void MiddleCode::addDataSeg(string _stringconst) {
+	data_const_string.push_back(_stringconst);
+}
