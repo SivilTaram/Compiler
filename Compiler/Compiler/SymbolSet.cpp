@@ -88,7 +88,7 @@ SymbolSet* SymbolSet::enterProc(SymbolItem* _proc) {
 
 
 void SymbolItem::printData() {
-	cout << "Name:" << name << "\t| Kind:" << getKindName() << "\t| Type:" << getTypeName() << "\t| Value:" << value << "\t| size:" << size << "\t| level:"<< level << endl;
+	cout << "Name:" << name << " | Kind:" << getKindName() << " | Type:" << getTypeName() << " | Value:" << value << " | size:" << size << " | level:"<< level << endl;
 }
 
 void SymbolSet::printData() {

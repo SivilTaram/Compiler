@@ -1,26 +1,57 @@
 #include "quaterinstr.h"
+#include "sstream"
 
 void QuaterInstr::printQuater() {
-	string output = printOpcode();
-	string des_name = "";
-	string src1_name = "";
-	string src2_name = "";
-	if (op != Opcode::BEGIN && op != Opcode::END)
-	{
-		if (des != NULL)
-			des_name = des->getKind() + ",";
-		else
-			des_name = "";
-		if (src1 != NULL)
-			src1_name = src1->getKind() + ",";
-		else
-			src1_name = "";
-		if (src2 != NULL)
-			src2_name = src2->getKind() + ";";
-		else
-			src2_name = "";
+	string opcode_name = printOpcode();
+	stringstream output;
+
+	if(op!=Opcode::SETL)
+		output << "\t" << opcode_name << "\t";	
+
+	if (op == Opcode::BEGIN || op == Opcode::END) {
+		output << ((SymbolSet *)des)->getProcName() << "\t";
 	}
-	cout << output << des_name << src1_name << src2_name;
+	else if (des == NULL && op != Opcode::SETL)
+		output << "-\t";
+	else if (des->getKind() == TokenKind::TEMP_CON)
+		output << des->getValue() << "\t";
+	else if (des->getKind() == TokenKind::TEMP_ADD)
+		output << "[" << des->getValue() << "]\t";
+	else if (des->getKind() == TokenKind::VAR)
+		output << des->getName() << "\t";
+	else if (des->getKind() == TokenKind::LABEL)
+		output << des->getName() << "\t";
+
+	if (op == Opcode::SETL)
+		output << "";
+	else if (src1 == NULL)
+		output << "-\t";
+	else if (src1->getKind() == TokenKind::TEMP_CON)
+		output << src1->getValue() << "\t";
+	else if (src1->getKind() == TokenKind::TEMP_ADD)
+		output << "[" << src1->getValue() << "]\t";
+	else if (src1->getKind() == TokenKind::TEMP)
+		output << src1->getName() << "\t";
+	else if (src1->getKind() == TokenKind::VAR)
+		output << src1->getName() << "\t";
+
+	if (op == Opcode::SETL)
+		output << "";
+	else if (src2 == NULL)
+		output << "-\t";
+	else if (src2->getKind() == TokenKind::TEMP_CON)
+		output << src2->getValue() << "\t";
+	else if (src2->getKind() == TokenKind::TEMP_ADD)
+		output << "[" << src2->getValue() << "]\t";
+	else if (src2->getKind() == TokenKind::VAR)
+		output << src2->getName() << "\t";
+	else if (src2->getKind() == TokenKind::TEMP)
+		output << src2->getName() << "\t";
+	else if (src2->getKind() == TokenKind::LABEL)
+		output << src2->getName() << "\t"; 
+
+
+	cout << output.str();
 }
 
 string QuaterInstr::printOpcode() {
@@ -38,15 +69,15 @@ string QuaterInstr::printOpcode() {
 	case BEQ:return "BEQ\t";
 	case BNE:return "BNE\t";
 	case ASS:return "ASS\t";
-	case ASSADD:return "ASSADD\t";
+	case ASSADD:return "ASSDD\t";
 	case JUMP:return "JUMP\t";
-	case SETLABEL:return "SETLABEL\t";
+	case SETL:return "";
 	case READ:return "READ\t";
 	case WRITE:return "WRITE\t";
 	case BEGIN:return "BEGIN\t";
 	case END:return "END\t";
 	case PUSH:return "PUSH\t";
-	case RETURN:return "RETURN\t";
+	case RETURN:return "RET\t";
 	case INC:return "INC\t";
 	case DEC:return "DEC\t";
 	default:

@@ -30,7 +30,7 @@ enum Opcode {
 	ARRADD,
 
 	JUMP,
-	SETLABEL,
+	SETL,
 	READ,
 	WRITE,
 	BEGIN,
@@ -60,7 +60,7 @@ enum Opcode {
 class QuaterInstr {
 	//op des src1 src2
 public:
-	QuaterInstr(Opcode _op,SymbolItem* _des=NULL,SymbolItem* _src1=NULL,SymbolItem* _src2=NULL);
+	QuaterInstr(Opcode _op,SymbolItem* _des ,SymbolItem* _src1 ,SymbolItem* _src2);
 	void printQuater();
 	string printOpcode();
 private:
