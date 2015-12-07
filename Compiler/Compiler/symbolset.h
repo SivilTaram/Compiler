@@ -159,7 +159,7 @@ public:
 	vector<SymbolItem*> getArgList();
 	
 	void printData();
-
+	void calcOffset();
 	//get the table's mapping item.
 
 #ifdef DEBUG_SYMBOL

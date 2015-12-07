@@ -106,3 +106,49 @@ void SymbolSet::printData() {
 		local_iter++;
 	}
 }
+
+
+/* 
+STACK STRUCTURE
+----------------------------- $fp
+arguments:
+args_1
+args_2
+...
+args_n
+saved return addresss
+saved old $fp
+local variables and structures
+saved Regs $s0-$s7
+----------------------------- $sp
+
+*/
+
+void SymbolSet::calcOffset() {
+	std::vector<SymbolItem*>::iterator iter = local_list.begin();
+	int args_size = 0;
+	//calculate the offset of the arguments.
+	while (iter != local_list.end()) {
+		if (((*iter)->getKind() == TokenKind::PARAVAR) || ((*iter)->getKind() == TokenKind::PARA)) {
+			args_size += (*iter)->getSize();
+		}
+		else if ((*iter)->getKind() == TokenKind::FUNC) {
+			(*iter)->setOffset(-(*iter)->getSize());
+		}
+	}
+
+	int current_offset;
+	int display_size = 0;
+	
+	//if the level = 1,then the SL should be like this:
+	// abp(0)
+	// abp(1)
+	// ...
+	// abp(n)
+	display_size = level;
+
+
+
+
+
+}

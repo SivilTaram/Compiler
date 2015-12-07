@@ -26,8 +26,11 @@ enum Opcode {
 	ASS,
 	// [des] = src
 	ASSADD,
-	// temp = add of array + 
+	// temp = add of array + offset
 	ARRADD,
+	// des = [src]
+	ARRASS,
+
 
 	JUMP,
 	SETL,
