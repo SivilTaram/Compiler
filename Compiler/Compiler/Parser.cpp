@@ -133,7 +133,7 @@ bool Parser::match(Symbol sym) {
 
 //return false -> end.
 //return true -> next.
-void Parser::next() throw(exception){
+void Parser::next() throw(eofexception){
 	//Read s symbol.
 	current_token = token_lexer.getsym();
 	//if symbol is '.' or the eof of the file,then end.
@@ -735,7 +735,7 @@ SymbolItem* Parser::expression() {
 	if (minus) {
 		temp = symbol_set.genTemp(TokenKind::TEMP, first_item->getType());
 		// temp = - first_item;
-		middle_code.gen(Opcode::NEG, first_item, temp,NULL);
+		middle_code.gen(Opcode::NEG, temp, first_item, NULL);
 		first_item = temp;
 	}
 
@@ -823,7 +823,7 @@ SymbolItem* Parser::factor(){
 #ifdef DEBUG
 	level--;
 #endif // DEBUG
-
+	return NULL;
 }
 
 //<数组类型> ::= array'['<无符号整数>']' of <基本类型>
@@ -893,6 +893,7 @@ SymbolItem* Parser::callFunc(SymbolItem* func) {
 		middle_code.gen(Opcode::ASS,return_value, func,NULL);
 		return return_value;
 	}
+	return NULL;
 }
 
 //<实在参数表>    :: = '(' <实在参数> {, <实在参数>}')'
@@ -922,7 +923,7 @@ SymbolItem* Parser::realParameter(SymbolItem* func) {
 	//we should check that the [var] should be a var 
 	//not a expr ,not a const , even a func!
 	while (real_iter!=real_parameters.end()) {
-		if (form_iter == real_parameters.end()) {
+		if (form_iter == form_parameters.end()) {
 			//FormParameters can't match the RealParameters.
 			Error::errorMessage(55, LineNo);
 			break;

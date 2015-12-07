@@ -20,6 +20,7 @@ SymbolItem* RootSymbolSet::search(string _name) {
 		//else look up and search.
 		temp = temp->father_table;
 	}
+	return NULL;
 }
 
 //Insert new Symbol to SymbolSet if no item with same name already exists.

@@ -95,6 +95,7 @@ string QuaterInstr::printOpcode() {
 	case BEQ:return "BEQ\t";
 	case BNE:return "BNE\t";
 	case ASS:return "ASS\t";
+	case ARRADD:return "ARRADD\t";
 	case ASSADD:return "ASSDD\t";
 	case JUMP:return "JUMP\t";
 	case SETL:return "";
