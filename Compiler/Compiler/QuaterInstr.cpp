@@ -13,34 +13,56 @@ void QuaterInstr::printQuater() {
 	}
 	else if (des == NULL && op != Opcode::SETL)
 		output << "-\t";
-	else if (des->getKind() == TokenKind::TEMP_CON)
+	else if (des->getKind() == TokenKind::TEMP_CON && des->getType() == TokenType::inttyp)
 		output << des->getValue() << "\t";
+	else if (des->getKind() == TokenKind::TEMP_CON && des->getType() == TokenType::stringtyp)
+		output << des->getString() << "\t";
+	else if (des->getKind() == TokenKind::TEMP_CON && des->getType() == TokenType::chartyp)
+		output << (char)des->getValue() << "\t";
 	else if (des->getKind() == TokenKind::TEMP_ADD)
 		output << "[" << des->getValue() << "]\t";
 	else if (des->getKind() == TokenKind::VAR)
 		output << des->getName() << "\t";
+	else if (des->getKind() == TokenKind::TEMP)
+		output << des->getName() << "\t";
 	else if (des->getKind() == TokenKind::LABEL)
+		output << des->getName() << "\t";
+	else if (des->getKind() == TokenKind::FUNC)
+		output << des->getName() << "\t";
+	else if (des->getKind() == TokenKind::PROC)
 		output << des->getName() << "\t";
 
 	if (op == Opcode::SETL)
 		output << "";
 	else if (src1 == NULL)
 		output << "-\t";
-	else if (src1->getKind() == TokenKind::TEMP_CON)
+	else if (src1->getKind() == TokenKind::TEMP_CON && src1->getType() == TokenType::inttyp)
 		output << src1->getValue() << "\t";
+	else if (src1->getKind() == TokenKind::TEMP_CON && src1->getType() == TokenType::stringtyp)
+		output << src1->getString() << "\t";
+	else if (src1->getKind() == TokenKind::TEMP_CON && src1->getType() == TokenType::chartyp)
+		output << (char)src1->getValue() << "\t";
 	else if (src1->getKind() == TokenKind::TEMP_ADD)
 		output << "[" << src1->getValue() << "]\t";
 	else if (src1->getKind() == TokenKind::TEMP)
 		output << src1->getName() << "\t";
 	else if (src1->getKind() == TokenKind::VAR)
 		output << src1->getName() << "\t";
+	else if (src1->getKind() == TokenKind::FUNC)
+		output << src1->getName() << "\t";
+	else if (src1->getKind() == TokenKind::PROC)
+		output << src1->getName() << "\t";
 
 	if (op == Opcode::SETL)
 		output << "";
 	else if (src2 == NULL)
 		output << "-\t";
-	else if (src2->getKind() == TokenKind::TEMP_CON)
+	else if (src2->getKind() == TokenKind::TEMP_CON && src2->getType() == TokenType::inttyp)
 		output << src2->getValue() << "\t";
+	else if (src2->getKind() == TokenKind::TEMP_CON && src2->getType() == TokenType::stringtyp)
+		output << src2->getString() << "\t";
+	else if (src2->getKind() == TokenKind::TEMP_CON && src2->getType() == TokenType::chartyp)
+		output << (char)src2->getValue() << "\t";
 	else if (src2->getKind() == TokenKind::TEMP_ADD)
 		output << "[" << src2->getValue() << "]\t";
 	else if (src2->getKind() == TokenKind::VAR)
@@ -49,6 +71,10 @@ void QuaterInstr::printQuater() {
 		output << src2->getName() << "\t";
 	else if (src2->getKind() == TokenKind::LABEL)
 		output << src2->getName() << "\t"; 
+	else if (src2->getKind() == TokenKind::FUNC)
+		output << src2->getName() << "\t";
+	else if (src2->getKind() == TokenKind::PROC)
+		output << src2->getName() << "\t";
 
 
 	cout << output.str();

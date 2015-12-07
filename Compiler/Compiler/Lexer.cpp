@@ -152,10 +152,12 @@ Token Lexer::getsym() {
 	else if (peek == '<') {
 		getch();
 		if (peek == '=') {
-			sym = Symbol::eql;
+			//<=
+			sym = Symbol::leq;
 			getch();
 		}
 		else if (peek == '>') {
+			//<>
 			sym = Symbol::neq;
 			getch();
 		}
@@ -166,7 +168,8 @@ Token Lexer::getsym() {
 	else if (peek == '>') {
 		getch();
 		if (peek == '=') {
-			sym = Symbol::gtr;
+			// >=
+			sym = Symbol::geq;
 			getch();
 		}
 		else

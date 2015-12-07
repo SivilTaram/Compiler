@@ -57,11 +57,12 @@ public:
 	}
 	string getName() { return name; }
 	TokenKind getKind() { return kind; }
-	TokenType getType() { return type; }
+ 	TokenType getType() { return type; }
 	int getValue() { return value; }
 	int getSize() { return size; }
 	int getLevel() { return level; }
 	int getOffset() { return offset; }
+	string getString() { return conststring; }
 
 	string getKindName() {
 		switch (kind)

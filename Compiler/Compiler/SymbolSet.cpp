@@ -95,6 +95,7 @@ void SymbolSet::printData() {
 	vector<SymbolItem*>::iterator local_iter = local_list.begin();
 	while (local_iter != local_list.end()) {
 		if ((*local_iter)->getKind() == TokenKind::FUNC || (*local_iter)->getKind() == TokenKind::PROC) {
+			(*local_iter)->printData();
 			string func_name = (*local_iter)->getName();
 			SymbolSet* temp_table = table_map[func_name];
 			temp_table->printData();

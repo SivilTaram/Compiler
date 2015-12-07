@@ -626,6 +626,7 @@ void Parser::funcDec() {
 			//set the function's return type.
 			if(item!=NULL)
 				item->setType(type);
+			next();
 		}
 		else
 		{
@@ -834,9 +835,9 @@ void Parser::selector(queue<string>* var_name) {
 	expect(Symbol::arraysym);
 	if (match(Symbol::lsquare)) {
 		next();
+		int array_size = current_token.getValue();
 		expect(Symbol::number);
 		//array_size;
-		int array_size = current_token.getValue();
 		//enter the array_table;
 		expect(Symbol::rsquare);
 		expect(Symbol::ofsym);
@@ -1287,7 +1288,9 @@ void Parser::assignment(SymbolItem* ident) {
 		expect(Symbol::becomes);
 		// dst := src1;
 		src1 = expression();
-		if (dst != NULL && (dst->getKind() == TokenKind::VAR
+		if (dst != NULL && 
+			src1 != NULL &&
+			(dst->getKind() == TokenKind::VAR
 			|| dst->getKind() == TokenKind::PARA
 			|| dst->getKind() == TokenKind::PARAVAR)) {
 			if (dst->getType() != src1->getType())
