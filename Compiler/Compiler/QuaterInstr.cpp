@@ -19,8 +19,10 @@ void QuaterInstr::printQuater() {
 		output << des->getString() << "\t";
 	else if (des->getKind() == TokenKind::TEMP_CON && des->getType() == TokenType::chartyp)
 		output << (char)des->getValue() << "\t";
-	else if (des->getKind() == TokenKind::TEMP_ADD)
-		output << "[" << des->getValue() << "]\t";
+	else if (des->getKind() == TokenKind::TEMP_ADD &&( op == Opcode::ASSADD || op==Opcode::ARRASS))
+		output << "[" << des->getName() << "]\t";
+	else if (des->getKind() == TokenKind::TEMP_ADD && op == Opcode::ARRADD)
+		output << des->getName() << "\t";
 	else if (des->getKind() == TokenKind::VAR)
 		output << des->getName() << "\t";
 	else if (des->getKind() == TokenKind::TEMP)
@@ -30,6 +32,8 @@ void QuaterInstr::printQuater() {
 	else if (des->getKind() == TokenKind::FUNC)
 		output << des->getName() << "\t";
 	else if (des->getKind() == TokenKind::PROC)
+		output << des->getName() << "\t";
+	else if (des->getKind() == TokenKind::ARRAY)
 		output << des->getName() << "\t";
 
 	if (op == Opcode::SETL)
@@ -42,8 +46,10 @@ void QuaterInstr::printQuater() {
 		output << src1->getString() << "\t";
 	else if (src1->getKind() == TokenKind::TEMP_CON && src1->getType() == TokenType::chartyp)
 		output << (char)src1->getValue() << "\t";
-	else if (src1->getKind() == TokenKind::TEMP_ADD)
-		output << "[" << src1->getValue() << "]\t";
+	else if (src1->getKind() == TokenKind::TEMP_ADD && (op == Opcode::ASSADD || op == Opcode::ARRASS))
+		output << "[" << src1->getName() << "]\t";
+	else if (src1->getKind() == TokenKind::TEMP_ADD && op == Opcode::ARRADD)
+		output << src1->getName() << "\t";
 	else if (src1->getKind() == TokenKind::TEMP)
 		output << src1->getName() << "\t";
 	else if (src1->getKind() == TokenKind::VAR)
@@ -51,6 +57,8 @@ void QuaterInstr::printQuater() {
 	else if (src1->getKind() == TokenKind::FUNC)
 		output << src1->getName() << "\t";
 	else if (src1->getKind() == TokenKind::PROC)
+		output << src1->getName() << "\t";
+	else if (src1->getKind() == TokenKind::ARRAY)
 		output << src1->getName() << "\t";
 
 	if (op == Opcode::SETL)
@@ -63,8 +71,10 @@ void QuaterInstr::printQuater() {
 		output << src2->getString() << "\t";
 	else if (src2->getKind() == TokenKind::TEMP_CON && src2->getType() == TokenType::chartyp)
 		output << (char)src2->getValue() << "\t";
-	else if (src2->getKind() == TokenKind::TEMP_ADD)
-		output << "[" << src2->getValue() << "]\t";
+	else if (src2->getKind() == TokenKind::TEMP_ADD && (op == Opcode::ASSADD || op == Opcode::ARRASS))
+		output << "[" << src2->getName() << "]\t";
+	else if (src2->getKind() == TokenKind::TEMP_ADD && op == Opcode::ARRADD)
+		output << src2->getName() << "\t";
 	else if (src2->getKind() == TokenKind::VAR)
 		output << src2->getName() << "\t";
 	else if (src2->getKind() == TokenKind::TEMP)
@@ -74,6 +84,8 @@ void QuaterInstr::printQuater() {
 	else if (src2->getKind() == TokenKind::FUNC)
 		output << src2->getName() << "\t";
 	else if (src2->getKind() == TokenKind::PROC)
+		output << src2->getName() << "\t";
+	else if (src2->getKind() == TokenKind::ARRAY)
 		output << src2->getName() << "\t";
 
 
@@ -104,9 +116,12 @@ string QuaterInstr::printOpcode() {
 	case BEGIN:return "BEGIN\t";
 	case END:return "END\t";
 	case PUSH:return "PUSH\t";
+	case PUSHVAR:return "PUSHVAR\t";
+	case CALL:return "CALL\t";
 	case RETURN:return "RET\t";
 	case INC:return "INC\t";
 	case DEC:return "DEC\t";
+	case ARRASS:return "ARRASS\t";
 	default:
 		break;
 	}

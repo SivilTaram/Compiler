@@ -677,7 +677,8 @@ void Parser::statement() {
 		// end
 		//or there should be a assign.
 		//  ident := 
-		else if(match(Symbol::becomes))
+		// A[2] := 
+		else if(match(Symbol::becomes) || match(Symbol::lsquare))
 		{
 			assignment(ident_item);
 		}
@@ -788,8 +789,11 @@ SymbolItem* Parser::factor(){
 			//////////////////////////////////////
 			// should a gen to store the address of array.
 			/////////////////////////////////////
+			middle_code.gen(Opcode::ARRADD, temp, ident, expr);
+			SymbolItem* value = symbol_set.genTemp(TokenKind::TEMP, ident->getType());
+			middle_code.gen(Opcode::ARRASS, value, temp, NULL);
 			expect(Symbol::rsquare);
-			return temp;
+			return value;
 		}
 		// func()
 		else if (match(Symbol::lparen))
