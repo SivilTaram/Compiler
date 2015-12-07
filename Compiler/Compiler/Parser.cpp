@@ -1142,12 +1142,12 @@ void Parser::ifStatement() {
 		statement();
 		middle_code.gen(Opcode::JUMP, endif_label,NULL,NULL);
 	}
+	middle_code.gen(Opcode::SETL, else_label, NULL, NULL);
 	if (match(Symbol::elsesym))
 	{
 #ifdef DEBUG
 		PRINT("else");
 #endif // DEBUG
-		middle_code.gen(Opcode::SETL, else_label,NULL,NULL);
 		next();
 		statement();
 	}
