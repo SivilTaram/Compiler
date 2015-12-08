@@ -116,8 +116,11 @@ args_1
 args_2
 ...
 args_n
+pre abp
+abp(n)
+abp(n-1)...
+abp(0)
 saved return addresss
-saved old $fp
 local variables and structures
 saved Regs $s0-$s7
 ----------------------------- $sp
@@ -137,7 +140,10 @@ void SymbolSet::calcOffset() {
 		}
 	}
 
-	int current_offset;
+	int current_offset = 0;
+	
+	int pre_abp_size = 0;
+
 	int display_size = 0;
 	
 	//if the level = 1,then the SL should be like this:
@@ -146,9 +152,11 @@ void SymbolSet::calcOffset() {
 	// ...
 	// abp(n)
 	display_size = level;
+}
 
 
-
-
-
+int SymbolSet::getDisplaySize() {
+	if (level >= 1)
+		return getLevel() * 4;
+	return 0;
 }

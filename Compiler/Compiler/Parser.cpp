@@ -988,8 +988,9 @@ SymbolItem* Parser::realParameter(SymbolItem* func) {
 
 	//gen a call func quater.
 	//I want to generate a quater with push and var.
-
-	middle_code.gen(Opcode::CALL, func,NULL,NULL);
+	SymbolSet* caller_func = symbol_set.serachTable(func->getName());
+	SymbolSet* callee_func = symbol_set.getCurrentSet();
+	middle_code.gen(Opcode::CALL,(SymbolItem*)caller_func,(SymbolItem*)callee_func,NULL);
 
 	//if this is a function and we should return its value
 	//for transfering it to others.
