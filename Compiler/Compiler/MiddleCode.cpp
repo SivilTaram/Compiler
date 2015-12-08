@@ -23,3 +23,13 @@ void MiddleCode::printMiddleCode() {
 void MiddleCode::addDataSeg(string _stringconst) {
 	data_const_string.push_back(_stringconst);
 }
+
+
+void MiddleCode::middleToMips() {
+	vector<QuaterInstr*>::iterator iter = middle_codes.begin();
+	while (iter != middle_codes.end()) {
+		QuaterInstr* single_middle = (*iter);
+		mips_instr.Handle(single_middle);
+		iter++;
+	}
+}

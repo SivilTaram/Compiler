@@ -88,7 +88,7 @@ SymbolSet* SymbolSet::enterProc(SymbolItem* _proc) {
 
 
 void SymbolItem::printData() {
-	cout << "Name:" << name << " | Kind:" << getKindName() << " | Type:" << getTypeName() << " | Value:" << value << " | size:" << size << " | level:"<< level << endl;
+	cout << "Name:" << name << " | Kind:" << getKindName() << " | Type:" << getTypeName() << " | Value:" << value << " | size:" << size << " | level:"<< level << "| Offset:"<< offset << endl;
 }
 
 void SymbolSet::printData() {
@@ -128,30 +128,72 @@ saved Regs $s0-$s7
 */
 
 void SymbolSet::calcOffset() {
-	std::vector<SymbolItem*>::iterator iter = local_list.begin();
-	int args_size = 0;
 	//calculate the offset of the arguments.
-	while (iter != local_list.end()) {
-		if (((*iter)->getKind() == TokenKind::PARAVAR) || ((*iter)->getKind() == TokenKind::PARA)) {
-			args_size += (*iter)->getSize();
-		}
-		else if ((*iter)->getKind() == TokenKind::FUNC) {
-			(*iter)->setOffset(-(*iter)->getSize());
+
+	int current_offset = 0;
+
+	current_offset += level * 4;
+
+	//as a reserve order to set the offset.
+	for (int i = local_list.size() - 1; i >= 0; i--) {
+		SymbolItem* iter = local_list[i];
+		if (iter->getKind() == TokenKind::PARAVAR || iter->getKind() == TokenKind::PARA)
+		{
+			args_size += iter->getSize();
+			iter->setOffset(current_offset);
+			current_offset += iter->getSize() * 4;
 		}
 	}
 
-	int current_offset = 0;
-	
-	int pre_abp_size = 0;
+	//the return address and s0~s7
+	stack_size += 9;
 
-	int display_size = 0;
-	
+	if (this->getProcItem()->getKind() == TokenKind::FUNC)
+	{
+		current_offset = -44;
+		stack_size += 1;
+	}
+	else
+		current_offset = -40;
+
+	vector<SymbolItem*>::iterator iter = local_list.begin();
+
+	while (iter != local_list.end()) {
+		SymbolItem* item = *iter;
+		if (item->getKind() == TokenKind::TEMP
+			|| item->getKind() == TokenKind::VAR
+			)
+		{
+			stack_size += 1;
+			item->setOffset(current_offset);
+			current_offset -= 4;
+		}
+		else if (item->getKind() == TokenKind::ARRAY)
+		{
+			stack_size += item->getSize();
+			item->setOffset(current_offset);
+			current_offset -= item->getSize() * 4;
+		}
+		else if (item->getKind() == TokenKind::PROC
+			|| item->getKind() == TokenKind::FUNC)
+		{
+			//Recursively;
+			item->setOffset(0);
+			SymbolSet* next_table = table_map[item->getName()];
+			next_table->calcOffset();
+		}
+		else {
+			item->setOffset(0);
+		}
+		iter++;
+	}
 	//if the level = 1,then the SL should be like this:
 	// abp(0)
 	// abp(1)
 	// ...
 	// abp(n)
 	display_size = level;
+
 }
 
 
@@ -159,4 +201,12 @@ int SymbolSet::getDisplaySize() {
 	if (level >= 1)
 		return getLevel() * 4;
 	return 0;
+}
+
+int SymbolSet::getArgsSize() {
+	return args_size * 4;
+}
+
+int SymbolSet::getStackSize() {
+	return stack_size * 4;
 }

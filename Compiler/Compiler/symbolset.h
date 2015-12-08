@@ -167,12 +167,10 @@ public:
 #endif // DEBUG
 
 	int getLevel();
-	/***
 	int getArgsSize();
 	int getStackSize();
+	int getDisplaySize();
 	//calculate offset of var,para,var para,array based on base pointer($fp)
-	int calOffset();
-	***/
 
 private:
 
@@ -182,6 +180,7 @@ private:
 	//store the names of current level function or procedure.
 	map<string, SymbolSet*> table_map;
 	int level;
-	/*int stack_size;
-	int args_size;*/
+	int stack_size;
+	int args_size;
+	int display_size;
 };

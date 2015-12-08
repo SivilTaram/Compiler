@@ -19,7 +19,7 @@ public:
 	bool RootSymbolSet::goback();
 
 	bool findProc(string _name);
-	
+	void calcOffset();
 	string getCurrentName();
 	
 

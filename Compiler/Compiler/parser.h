@@ -7,6 +7,7 @@
 #include "lexer.h"
 #include "rootsymbolset.h"
 #include "middlecode.h"
+#include "mipsinstr.h"
 
 //#define DEBUG
 
@@ -18,6 +19,7 @@ private:
 	Lexer token_lexer;
 	RootSymbolSet symbol_set;
 	MiddleCode middle_code;
+	MipsInstr object_code;
 
 public:
 	Parser(string file_path) :token_lexer(file_path){};

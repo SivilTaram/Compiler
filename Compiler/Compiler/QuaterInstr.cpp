@@ -128,6 +128,22 @@ string QuaterInstr::printOpcode() {
 	return "NULL\t";
 }
 
+SymbolItem* QuaterInstr::getDes() {
+	return des;
+}
+
+SymbolItem* QuaterInstr::getSrc1() {
+	return src1;
+}
+
+SymbolItem* QuaterInstr::getSrc2() {
+	return src2;
+}
+
+Opcode QuaterInstr::getOpType() {
+	return op;
+}
+
 QuaterInstr::QuaterInstr(Opcode _op, SymbolItem* _des, SymbolItem* _src1, SymbolItem* _src2) {
 	op = _op;
 	des = _des;

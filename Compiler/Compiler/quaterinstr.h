@@ -63,6 +63,10 @@ enum Opcode {
 class QuaterInstr {
 	//op des src1 src2
 public:
+	SymbolItem* getDes();
+	SymbolItem* getSrc1();
+	SymbolItem* getSrc2();
+	Opcode getOpType();
 	QuaterInstr(Opcode _op,SymbolItem* _des ,SymbolItem* _src1 ,SymbolItem* _src2);
 	void printQuater();
 	string printOpcode();

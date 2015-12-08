@@ -132,3 +132,7 @@ vector<SymbolItem*> RootSymbolSet::getArgList(string _name)
 void RootSymbolSet::printSymbolSet() {
 	root_table->printData();
 }
+
+void RootSymbolSet::calcOffset() {
+	root_table->calcOffset();
+}
