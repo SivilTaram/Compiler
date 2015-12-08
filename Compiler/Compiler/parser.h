@@ -19,7 +19,6 @@ private:
 	Lexer token_lexer;
 	RootSymbolSet symbol_set;
 	MiddleCode middle_code;
-	MipsInstr object_code;
 
 public:
 	Parser(string file_path) :token_lexer(file_path){};

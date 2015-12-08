@@ -189,6 +189,8 @@ void Parser::translate() {
 	symbol_set.calcOffset();
 	symbol_set.printSymbolSet();
 	middle_code.printMiddleCode();
+	MipsInstr* mips_instr = new MipsInstr(middle_code, symbol_set);
+	mips_instr->translate();
 }
 
 /*
@@ -886,6 +888,11 @@ void Parser::callPro(SymbolItem* proc) {
 	if (match(Symbol::lparen)) {
 		realParameter(proc);
 	}
+	else {
+		SymbolSet* caller_func = symbol_set.serachTable(proc->getName());
+		SymbolSet* callee_func = symbol_set.getCurrentSet();
+		middle_code.gen(Opcode::CALL, (SymbolItem*)caller_func, (SymbolItem*)callee_func, NULL);
+	}
 }
 
 //<函数调用语句>  :: = <标识符>[<实在参数表>]
@@ -897,6 +904,11 @@ SymbolItem* Parser::callFunc(SymbolItem* func) {
 		//let the return_value to store the value of func.
 		middle_code.gen(Opcode::ASS,return_value, func,NULL);
 		return return_value;
+	}
+	else {
+		SymbolSet* caller_func = symbol_set.serachTable(func->getName());
+		SymbolSet* callee_func = symbol_set.getCurrentSet();
+		middle_code.gen(Opcode::CALL, (SymbolItem*)caller_func, (SymbolItem*)callee_func, NULL);
 	}
 	return NULL;
 }
