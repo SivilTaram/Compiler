@@ -12,6 +12,7 @@ const string $ra = "$ra";
 const string $v0 = "$v0";
 const string $t0 = "$t0";
 const string $t1 = "$t1";
+const string $t2 = "$t2";
 const string $a0 = "$a0";
 const string $0 = "$0";
 const string $t7 = "$t7";
@@ -305,20 +306,17 @@ void MipsInstr::storeMemory(const string _$i, SymbolItem* item) {
 
 //[des] = src
 void MipsInstr::HandleAssignAddr(SymbolItem* addr,SymbolItem* value) {
-	if (value->getKind() == TokenKind::CONST || value->getKind()==TokenKind::TEMP_CON)
-	{
-		add(MipsCode::sw, $t0, to_string(addr->getValue()), 0);
-	}
-	else {
 		loadReg(value, $t0);
-		add(MipsCode::sw, $t0, to_string(addr->getValue()), 0);
-	}
+		loadReg(addr, $t1);
+		add(MipsCode::sw, $t0,"0", $t1);
 }
 
 //temp = abstract add or array + offset.
 void MipsInstr::HandleArrayAddr(SymbolItem* addr, SymbolItem* base, SymbolItem* offset) {
 	getRef(base);
 	loadReg(offset, $t1);
+	add(MipsCode::li, $t2, "4");
+	add(MipsCode::mult, $t1, $t1, $t2);
 	add(MipsCode::sub, $t0, $t0, $t1);
 	storeMemory($t0, addr);
 }
@@ -326,9 +324,13 @@ void MipsInstr::HandleArrayAddr(SymbolItem* addr, SymbolItem* base, SymbolItem* 
 // value = [addr];
 void MipsInstr::HandleArrayAssign(SymbolItem* value , SymbolItem* addr) {
 	//addr getValue;
+	// $t0 = address of addr
 	getRef(addr);
-	add(MipsCode::lw, $t0, "0", $t0);
-	storeMemory($t0, value);
+	// $t2 = lw 0($t0) = addr;
+	add(MipsCode::lw, $t2, "0", $t0);
+	// $t2 = lw 0($t2) = value;
+	add(MipsCode::lw, $t2, "0", $t2);
+	storeMemory($t2, value);
 }
 
 // des = src;
@@ -413,6 +415,7 @@ void MipsInstr::translate() {
 }
 
 //get the address of the symbol item.
+//the address of the symbol item strore in the $t0
 void MipsInstr::getRef(SymbolItem* item) {
 	if (current_table->getItem(item->getName()) != NULL) {
 		add(MipsCode::addi, $t0, $fp, to_string(item->getOffset()));

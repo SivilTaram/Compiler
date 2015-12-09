@@ -162,6 +162,7 @@ void SymbolSet::calcOffset() {
 		SymbolItem* item = *iter;
 		if (item->getKind() == TokenKind::TEMP
 			|| item->getKind() == TokenKind::VAR
+			|| item->getKind() == TokenKind::TEMP_ADD
 			)
 		{
 			stack_size += 1;
