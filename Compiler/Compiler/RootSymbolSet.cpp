@@ -2,7 +2,7 @@
 #include "rootsymbolset.h"
 #include <sstream>
 RootSymbolSet::RootSymbolSet() {
-	SymbolItem* root_item = new SymbolItem("root",TokenKind::PROC,TokenType::voidtyp);
+	SymbolItem* root_item = new SymbolItem("root@",TokenKind::PROC,TokenType::voidtyp);
 	//allocate a new table for root function.
 	root_table = new SymbolSet(root_item, NULL, 0);
 	current_table = root_table;
@@ -18,6 +18,15 @@ SymbolItem* RootSymbolSet::search(string _name) {
 		if (result != NULL)
 			return result;
 		//else look up and search.
+		temp = temp->father_table;
+	}
+	temp = current_table;
+	result = NULL;
+	while (temp != NULL) {
+		//find the func
+		result = temp->getItem(current_table->getProcName() + _name + "@");
+		if (result != NULL)
+			return result;
 		temp = temp->father_table;
 	}
 	return NULL;

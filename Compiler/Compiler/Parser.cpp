@@ -480,7 +480,8 @@ void Parser::procDec() {
 
 	if (match(Symbol::ident))
 	{
-		string proc_name = current_token.getName();
+		SymbolSet* current_table = symbol_set.getCurrentSet();
+		string proc_name = current_table->getProcName() + current_token.getName()+"@";
 		SymbolItem* proc = symbol_set.insert(proc_name, TokenKind::PROC, TokenType::voidtyp);
 		if (proc == NULL)
 			//the procedure is built.
@@ -590,7 +591,8 @@ void Parser::funcDec() {
 		level++;
 		PRINT("function Declaration "+ current_token.getName());
 #endif // DEBUG
-		string func_name = current_token.getName();
+		SymbolSet* current_table = symbol_set.getCurrentSet();
+		string func_name = current_table->getProcName() + current_token.getName() + "@";
 		//void is the temporatory return type!!!
 		SymbolItem* item = symbol_set.insert(func_name, TokenKind::FUNC, TokenType::voidtyp);
 		if (item == NULL)
@@ -889,8 +891,8 @@ void Parser::callPro(SymbolItem* proc) {
 		realParameter(proc);
 	}
 	else {
-		SymbolSet* caller_func = symbol_set.serachTable(proc->getName());
-		SymbolSet* callee_func = symbol_set.getCurrentSet();
+		SymbolSet* callee_func = symbol_set.serachTable(proc->getName());
+		SymbolSet* caller_func = symbol_set.getCurrentSet();
 		middle_code.gen(Opcode::CALL, (SymbolItem*)caller_func, (SymbolItem*)callee_func, NULL);
 	}
 }
@@ -906,8 +908,8 @@ SymbolItem* Parser::callFunc(SymbolItem* func) {
 		return return_value;
 	}
 	else {
-		SymbolSet* caller_func = symbol_set.serachTable(func->getName());
-		SymbolSet* callee_func = symbol_set.getCurrentSet();
+		SymbolSet* callee_func = symbol_set.serachTable(func->getName());
+		SymbolSet* caller_func = symbol_set.getCurrentSet();
 		middle_code.gen(Opcode::CALL, (SymbolItem*)caller_func, (SymbolItem*)callee_func, NULL);
 	}
 	return NULL;
@@ -1001,8 +1003,8 @@ SymbolItem* Parser::realParameter(SymbolItem* func) {
 
 	//gen a call func quater.
 	//I want to generate a quater with push and var.
-	SymbolSet* caller_func = symbol_set.serachTable(func->getName());
-	SymbolSet* callee_func = symbol_set.getCurrentSet();
+	SymbolSet* callee_func = symbol_set.serachTable(func->getName());
+	SymbolSet* caller_func = symbol_set.getCurrentSet();
 	middle_code.gen(Opcode::CALL,(SymbolItem*)caller_func,(SymbolItem*)callee_func,NULL);
 
 	//if this is a function and we should return its value
