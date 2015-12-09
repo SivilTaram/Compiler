@@ -1453,6 +1453,7 @@ void Parser::writeStatement() {
 	else{
 		SymbolItem* write_arg = expression();
 		middle_code.gen(Opcode::WRITE, write_arg,NULL,NULL);
+		expect(Symbol::rparen);
 	}
 
 #ifdef DEBUG

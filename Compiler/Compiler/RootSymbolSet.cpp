@@ -24,7 +24,7 @@ SymbolItem* RootSymbolSet::search(string _name) {
 	result = NULL;
 	while (temp != NULL) {
 		//find the func
-		result = temp->getItem(current_table->getProcName() + _name + "@");
+		result = temp->getItem(current_table->getProcName() + _name + "_");
 		if (result != NULL)
 			return result;
 		temp = temp->father_table;
@@ -122,7 +122,7 @@ SymbolItem* RootSymbolSet::genLabel() {
 	static int count = 1;
 	SymbolItem* label = NULL;
 	stringstream name;
-	name<< "-L-" << count;
+	name<< "L_" << count;
 	//string name = "_L" + count;
 	label = new SymbolItem(name.str(), TokenKind::LABEL, TokenType::notyp);
 	current_table->enterItem(label);

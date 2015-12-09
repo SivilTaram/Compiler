@@ -2,7 +2,7 @@
 
 
  int main() {
-	Parser* parser_var = new Parser("test/expr.txt");
+	Parser* parser_var = new Parser("test/233.txt");
 	parser_var->parser();
 	parser_var->translate();
 	//Parser* parser_const = new Parser("test/const.txt");
