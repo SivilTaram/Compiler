@@ -481,7 +481,7 @@ void Parser::procDec() {
 	if (match(Symbol::ident))
 	{
 		SymbolSet* current_table = symbol_set.getCurrentSet();
-		string proc_name = current_table->getProcName() + current_token.getName()+"@";
+		string proc_name = current_table->getProcName() + current_token.getName()+"_";
 		SymbolItem* proc = symbol_set.insert(proc_name, TokenKind::PROC, TokenType::voidtyp);
 		if (proc == NULL)
 			//the procedure is built.
@@ -592,7 +592,7 @@ void Parser::funcDec() {
 		PRINT("function Declaration "+ current_token.getName());
 #endif // DEBUG
 		SymbolSet* current_table = symbol_set.getCurrentSet();
-		string func_name = current_table->getProcName() + current_token.getName() + "@";
+		string func_name = current_table->getProcName() + current_token.getName() + "_";
 		//void is the temporatory return type!!!
 		SymbolItem* item = symbol_set.insert(func_name, TokenKind::FUNC, TokenType::voidtyp);
 		if (item == NULL)

@@ -23,35 +23,50 @@ void MipsInstr::Handle(QuaterInstr* _middle) {
 	case DIV:
 		HandleCalc(choose, _middle->getDes(), _middle->getSrc1(), _middle->getSrc2()); break;
 	case NEG:
-	case ASS:break;
-	case ASSADD:break;
+		HandleNeg(_middle->getDes(), _middle->getSrc1()); break;
+	case ASS:
+		HandleAssign(_middle->getDes(), _middle->getSrc1()); break;
+	case ASSADD:
+		break;
 	case ARRADD:break;
-	case ARRASS:HandleArrayAssign(_middle->getDes(),_middle->getSrc1());
-	case SETL:break;
+	case ARRASS:
+		HandleArrayAssign(_middle->getDes(), _middle->getSrc1()); break;
+	case SETL:
+		HandleSetLabel(_middle->getDes());
 	case READ:break;
-	case WRITE:break;
+	case WRITE:
+		HandleWrite(_middle->getDes()); break;
 	case BGR:
 	case BGE:
 	case BLS:
 	case BLE:
 	case BEQ:
-	case BNE:HandleBranch(choose,_middle->getDes(),_middle->getSrc1(),_middle->getSrc2()); break;
-	case JUMP:break;
+	case BNE:
+		HandleBranch(choose,_middle->getDes(),_middle->getSrc1(),_middle->getSrc2()); break;
+	case JUMP:
+		HandleJump(_middle->getDes()); break;
 	case BEGIN:HandleBegin(_middle->getDes());break;
 	case END:HandleEnd(_middle->getDes()); break;
 	case CALL:HandleCall(_middle->getDes(), _middle->getSrc1());break;
 	case PUSH:break;
 	case PUSHVAR:break;
-	case INC:break;
-	case DEC:break;
+	case INC:
+		HandleInc(_middle->getDes()); break;
+	case DEC:
+		HandleDec(_middle->getDes()); break;
 	case RETURN:break;
 	default:break;
 	}
 }
 
+
 MipsInstr::MipsInstr(MiddleCode& _code, RootSymbolSet& _root):middle_code(_code), root_table(_root) {
 	current_table = _root.getRootSet();
-	add(MipsCode::j, "root@");
+	add(MipsCode::j, "root_");
+}
+
+void MipsInstr::HandleJump(SymbolItem* des) {
+	add(MipsCode::j, des->getName());
 }
 
 void MipsInstr::HandleBegin(SymbolItem* des) {
@@ -88,16 +103,14 @@ void MipsInstr::HandleBegin(SymbolItem* des) {
 	// 
 	add(MipsCode::label, current_table->getProcName() + ":");
 	// move $fp,$sp to update the $fp.
-	if (current_table->getLevel() != 0) {
-		add(MipsCode::move, $fp, $sp);
-		add(MipsCode::sw, $ra, "-4", $fp);
-		for (int i = 0; i < 8; i++) {
-			add(MipsCode::sw, "$s" + to_string(i), to_string(-4 - (i + 1) * 4), $fp);
-		}
-
-		int current_stack_size = current_table->getStackSize();
-		add(MipsCode::subi, $sp, $sp, to_string(current_stack_size));
+	add(MipsCode::move, $fp, $sp);
+	add(MipsCode::sw, $ra, "-4", $fp);
+	for (int i = 0; i < 8; i++) {
+		add(MipsCode::sw, "$s" + to_string(i), to_string(-4 - (i + 1) * 4), $fp);
 	}
+
+	int current_stack_size = current_table->getStackSize();
+	add(MipsCode::subi, $sp, $sp, to_string(current_stack_size));
 }
 
 void MipsInstr::HandleEnd(SymbolItem* des) {
@@ -149,10 +162,36 @@ void MipsInstr::HandleBranch(Opcode _branch,SymbolItem* des, SymbolItem* src1, S
 }
 
 void MipsInstr::HandleWrite(SymbolItem* item) {
-	if (item->getType()==TokenType::chartyp){
-		add(MipsCode::addi, $a0, $0, to_string(item->getValue()));
-		add(MipsCode::li, $v0, "11");
-		add(MipsCode::syscall);
+	if (item->getKind() == TokenKind::CONST || item->getKind() == TokenKind::TEMP_CON) {
+		if (item->getType() == TokenType::chartyp) {
+			add(MipsCode::addi, $a0, $0, to_string(item->getValue()));
+			add(MipsCode::li, $v0, "11");
+			add(MipsCode::syscall);
+		}
+		else if (item->getType() == TokenType::inttyp) {
+			add(MipsCode::addi, $a0, $0, to_string(item->getValue()));
+			add(MipsCode::li, $v0, "1");
+			add(MipsCode::syscall);
+		}
+	}
+	else if (item->getKind() == TokenKind::VAR ||
+		item->getKind() == TokenKind::PARA ||
+		item->getKind() == TokenKind::TEMP ||
+		item->getKind() == TokenKind::TEMP_ADD ||
+		item->getKind() == TokenKind::ARRAY)
+	{
+		if (item->getType() == TokenType::chartyp) {
+			loadReg(item, $t0);
+			add(MipsCode::add, $a0, $0, $t0);
+			add(MipsCode::li, $v0, "11");
+			add(MipsCode::syscall);
+		}
+		else if (item->getType() == TokenType::inttyp) {
+			loadReg(item, $t0);
+			add(MipsCode::add, $a0, $0, $t0);
+			add(MipsCode::li, $v0, "1");
+			add(MipsCode::syscall);
+		}
 	}
 }
 
@@ -209,6 +248,11 @@ void MipsInstr::HandleCall(SymbolItem* _caller,SymbolItem* _callee) {
 
 //load the item -> $i
 void MipsInstr::loadReg(SymbolItem* item,const string _$i) {
+	if (item->getKind() == TokenKind::TEMP_CON || item->getKind() == TokenKind::CONST)
+	{
+		add(MipsCode::li, _$i, to_string(item->getValue()));
+		return;
+	}
 	if (current_table->getItem(item->getName())!=NULL) {
 		add(MipsCode::lw, _$i, to_string(item->getOffset()), $fp);
 	}
@@ -231,6 +275,18 @@ void MipsInstr::storeMemory(const string _$i, SymbolItem* item) {
 	}
 }
 
+//[des] = src
+void MipsInstr::HandleAssignAddr(SymbolItem* addr,SymbolItem* value) {
+	if (value->getKind() == TokenKind::CONST || value->getKind()==TokenKind::TEMP_CON)
+	{
+		add(MipsCode::sw, $t0, to_string(addr->getValue()), 0);
+	}
+	else {
+		loadReg(value, $t0);
+		add(MipsCode::sw, $t0, to_string(addr->getValue()), 0);
+	}
+}
+
 // value = [addr];
 void MipsInstr::HandleArrayAssign(SymbolItem* value , SymbolItem* addr) {
 	//addr getValue;
@@ -246,7 +302,7 @@ void MipsInstr::HandleAssign(SymbolItem* des, SymbolItem* src) {
 }
 
 //Handle the calc instruction
-void MipsInstr::HandleCalc(Opcode choose,SymbolItem* des,SymbolItem* src1,SymbolItem* src2) {
+void MipsInstr::HandleCalc(Opcode choose,SymbolItem* des,SymbolItem* src1,SymbolItem* src2){
 	loadReg(src1, $t0);
 	loadReg(src2, $t1);
 	if (choose == Opcode::MUL) {
@@ -259,9 +315,28 @@ void MipsInstr::HandleCalc(Opcode choose,SymbolItem* des,SymbolItem* src1,Symbol
 		add(MipsCode::sub, $s0, $t0, $t1);
 	}
 	else if (choose == Opcode::DIV) {
-		add(MipsCode::ddiv, $s0, $t0, $t1);
+		add(MipsCode::ddiv,$t0, $t1);
+		add(MipsCode::mfhi, $s0);
 	}
 	storeMemory($s0, des);
+}
+
+// src = src + 1
+void MipsInstr::HandleInc(SymbolItem* src) {
+	loadReg(src, $t0);
+	add(MipsCode::addi, $t0, $t0, "1");
+	storeMemory($t0, src);
+}
+
+// src = src - 1
+void MipsInstr::HandleDec(SymbolItem* src) {
+	loadReg(src, $t0);
+	add(MipsCode::subi, $t0, $t0, "1");
+	storeMemory($t0, src);
+}
+
+void MipsInstr::HandleSetLabel(SymbolItem* des) {
+	add(MipsCode::label,des->getName());
 }
 
 // $s0 = - $t0;
@@ -279,11 +354,13 @@ void MipsInstr::translate() {
 	while (iter != middle_code.getMiddleCode()->end()) {
 		QuaterInstr* single_middle = (*iter);
 		if (single_middle->getOpType() == Opcode::BEGIN)
-			current_table = (SymbolSet*)single_middle->getSrc1();
+			current_table = (SymbolSet*)single_middle->getDes();
 		Handle(single_middle);
 		iter++;
 	}
+	ofstream fout("F://Compiler//output.txt");
 	for (int i = 0; i < object_insrtuctions.size(); i++) {
-		object_insrtuctions[i].printInstr();
+		fout << object_insrtuctions[i].printInstr() << endl;
 	}
+	fout.close();
 }

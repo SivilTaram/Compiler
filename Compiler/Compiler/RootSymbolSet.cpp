@@ -2,7 +2,7 @@
 #include "rootsymbolset.h"
 #include <sstream>
 RootSymbolSet::RootSymbolSet() {
-	SymbolItem* root_item = new SymbolItem("root@",TokenKind::PROC,TokenType::voidtyp);
+	SymbolItem* root_item = new SymbolItem("root_",TokenKind::PROC,TokenType::voidtyp);
 	//allocate a new table for root function.
 	root_table = new SymbolSet(root_item, NULL, 0);
 	current_table = root_table;
