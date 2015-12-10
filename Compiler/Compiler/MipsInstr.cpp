@@ -448,7 +448,7 @@ void MipsInstr::HandleNeg(SymbolItem* des, SymbolItem* src) {
 //handle the read statement.
 void MipsInstr::HandleRead(SymbolItem* des) {
 	add(MipsCode::note, "read");
-	if (des->getType() == TokenType::chartyp) {
+	if (des->getType() == TokenType::inttyp) {
 		add(MipsCode::li, $v0, "5");
 		add(MipsCode::syscall);
 	}

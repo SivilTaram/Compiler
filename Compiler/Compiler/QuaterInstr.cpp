@@ -86,7 +86,7 @@ void QuaterInstr::printQuater() {
 	else if (src2->getKind() == TokenKind::PROC)
 		output << src2->getName() << "\t";
 	else if (src2->getKind() == TokenKind::ARRAY)
-		output << src2->getName() << "\t";
+		output << src2->getName() << "\t";	
 
 
 	cout << output.str();

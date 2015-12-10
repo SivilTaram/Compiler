@@ -666,26 +666,12 @@ void Parser::statement() {
 		next();
 		//proc or func there should be a paren
 		//<过程调用语句>  ::=  <标识符>[<实在参数表>]
-		if (match(Symbol::lparen) || match(Symbol::semicolon) || match(Symbol::endsym) )
-		{
-			//[FIXME] realParameter. 
-			callPro(ident_item);
-		}
-		// procedure;
-		//if there is a ';',this means
-		//this is a procedure or a func 's call without parameters.
-		//like this one:
-		// A;
-		//      or
-		// begin
-		// A
-		// end
-		//or there should be a assign.
-		//  ident := 
-		// A[2] := 
-		else if(match(Symbol::becomes) || match(Symbol::lsquare))
+		if(match(Symbol::becomes) || match(Symbol::lsquare))
 		{
 			assignment(ident_item);
+		}
+		else {
+			callPro(ident_item);
 		}
 	}
 	else if (match(Symbol::beginsym))
