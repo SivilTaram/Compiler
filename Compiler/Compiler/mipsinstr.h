@@ -44,7 +44,8 @@ enum MipsCode {
 	bne,
 	syscall,
 	label,
-	mflo
+	mflo,
+	note
 };
 
 
@@ -123,6 +124,8 @@ public:
 			return ""; break;
 		case j:
 			return "j"; break;
+		case note:
+			return "#"; break;
 		default:
 			break;
 		}
@@ -192,7 +195,9 @@ private:
 	void HandleSetLabel(SymbolItem* des);
 	void HandleJump(SymbolItem* des);
 	void HandlePush(SymbolItem* des);
-	void loadReg(SymbolItem* item,const string _$i);
+	void HandlePushVar(SymbolItem* des);
+	void HandleRead(SymbolItem* des);
+	void loadReg(SymbolItem* item,const string _$i,bool _loadaddrvalue=false);
 	void storeMemory(const string _$i, SymbolItem* item);
 	string genString();
 	void getRef(SymbolItem* item);

@@ -37,8 +37,9 @@ void MipsInstr::Handle(QuaterInstr* _middle) {
 	case ARRASS:
 		HandleArrayAssign(_middle->getDes(), _middle->getSrc1()); break;
 	case SETL:
-		HandleSetLabel(_middle->getDes());
-	case READ:break;
+		HandleSetLabel(_middle->getDes()); break;
+	case READ:
+		HandleRead(_middle->getDes()); break;
 	case WRITE:
 		HandleWrite(_middle->getDes()); break;
 	case BGR:
@@ -58,7 +59,8 @@ void MipsInstr::Handle(QuaterInstr* _middle) {
 		HandleCall(_middle->getDes(), _middle->getSrc1());break;
 	case PUSH:
 		HandlePush(_middle->getDes()); break;
-	case PUSHVAR:break;
+	case PUSHVAR:
+		HandlePushVar(_middle->getDes()); break;
 	case INC:
 		HandleInc(_middle->getDes()); break;
 	case DEC:
@@ -75,10 +77,12 @@ MipsInstr::MipsInstr(MiddleCode& _code, RootSymbolSet& _root):middle_code(_code)
 }
 
 void MipsInstr::HandleJump(SymbolItem* des) {
+	add(MipsCode::note, "Jump");
 	add(MipsCode::j, des->getName());
 }
 
 void MipsInstr::HandleBegin(SymbolItem* des) {
+	add(MipsCode::note, "begin");
 	SymbolSet* current_table = (SymbolSet*)des;
 	/*
 	if there is the begin of a function or procedure.
@@ -131,6 +135,7 @@ void MipsInstr::HandleBegin(SymbolItem* des) {
 }
 
 void MipsInstr::HandleEnd(SymbolItem* des) {
+	add(MipsCode::note, "end");
 	SymbolSet* current_table = (SymbolSet*)des;
 	/*
 	lw $ra,-4($fp)
@@ -163,6 +168,8 @@ void MipsInstr::HandleEnd(SymbolItem* des) {
 }
 
 void MipsInstr::HandleBranch(Opcode _branch,SymbolItem* des, SymbolItem* src1, SymbolItem* src2){
+
+	add(MipsCode::note, "branch");
 	loadReg(src1, $t0);
 	loadReg(src2, $t1);
 	if (_branch == Opcode::BEQ)
@@ -194,6 +201,7 @@ void MipsInstr::HandleBranch(Opcode _branch,SymbolItem* des, SymbolItem* src1, S
 //write something
 //char , int , and string
 void MipsInstr::HandleWrite(SymbolItem* item) {
+	add(MipsCode::note, "write");
 	if (item->getKind() == TokenKind::CONST || item->getKind() == TokenKind::TEMP_CON) {
 		if (item->getType() == TokenType::chartyp) {
 			add(MipsCode::addi, $a0, $0, to_string(item->getValue()));
@@ -215,6 +223,7 @@ void MipsInstr::HandleWrite(SymbolItem* item) {
 	}
 	else if (item->getKind() == TokenKind::VAR ||
 		item->getKind() == TokenKind::PARA ||
+		item->getKind() == TokenKind::PARAVAR || 
 		item->getKind() == TokenKind::TEMP ||
 		item->getKind() == TokenKind::TEMP_ADD ||
 		item->getKind() == TokenKind::ARRAY)
@@ -249,6 +258,7 @@ void MipsInstr::HandleCall(SymbolItem* _caller,SymbolItem* _callee) {
 	cout << "debug call" << endl;
 #endif // DEBUG
 
+	add(MipsCode::note, "call");
 	SymbolSet* caller_table = (SymbolSet*)_caller;
 	SymbolSet* callee_table = (SymbolSet*)_callee;
 	// subi $sp,$sp,4
@@ -258,52 +268,71 @@ void MipsInstr::HandleCall(SymbolItem* _caller,SymbolItem* _callee) {
 	// subi $sp,$sp,display_size
 	// if the level is less or equal,then drag calller's SL
 	int size = callee_table->getDisplaySize();
+
 	if (callee_table->getLevel() <= caller_table->getLevel())
 	{
-		for (int i = 0; i < size / 4; i++) {
-			add(MipsCode::lw, $s0, to_string(i * 4), $fp);
-			add(MipsCode::sw, $s0, to_string(i * 4), $sp);
+		for (int i = size/4 - 1; i >=0 ; i--) {
+			add(MipsCode::lw, $s0, to_string(i * 4 + 4 ), $fp);
+			add(MipsCode::sw, $s0, "0", $sp);
+			add(MipsCode::subi, $sp, $sp, "4");
 		}
 	}
 	// if the level is more than caller.
 	else {
-		int  i = 0;
+		add(MipsCode::note, "level + 1");
+		int i;
+		add(MipsCode::sw, $fp, "0", $sp);
+		add(MipsCode::subi, $sp, $sp, "4");
 		if (caller_table->getDisplaySize() != 0)
 		{
-			for (i = 0; i < caller_table->getDisplaySize() / 4; i++) {
-				add(MipsCode::lw, $s0, to_string(i * 4), $fp);
-				add(MipsCode::sw, $s0, to_string(i * 4), $sp);
+			for (i = caller_table->getDisplaySize() / 4 - 1; i >=0 ; i--) {
+				add(MipsCode::lw, $s0, to_string(i * 4 + 4), $fp);
+				add(MipsCode::sw, $s0, "0", $sp);
+				add(MipsCode::subi, $sp, $sp, "4");
 			}
 		}
-		add(MipsCode::sw, $fp, to_string(i * 4), $sp);
 	}
-	if (size != 0)
-		add(MipsCode::subi, $sp, $sp, to_string(size));
 	// jal callee_table;
 	add(MipsCode::jal,callee_table->getProcName());
 }
 
 //load the item -> $i
-void MipsInstr::loadReg(SymbolItem* item,const string _$i) {
-	if (item->getKind() == TokenKind::TEMP_CON || item->getKind() == TokenKind::CONST)
-	{
-		add(MipsCode::li, _$i, to_string(item->getValue()));
-		return;
-	}
-	else if (item->getKind() == TokenKind::FUNC) {
-		add(MipsCode::addi, _$i, $v0, "0");
-		return;
-	}
-	if (current_table->getItem(item->getName())!=NULL) {
-		add(MipsCode::lw, _$i, to_string(item->getOffset()), $fp);
-	}
-	else {
-		int display_base = item->getLevel() * 4 + 4;
-		if (_$i == "$t0")
-			cout << "this is a bug" << endl;
-		add(MipsCode::lw, $t7, to_string(display_base), $fp);
-		add(MipsCode::lw, _$i, to_string(item->getOffset()), $t7);
-	}
+void MipsInstr::loadReg(SymbolItem* item,const string _$i, bool _loadaddrvalue) {
+	/*
+	the load_addr_value is true means that:
+	_$i =  addr -> use in multi function var parameter.
+	else means
+	_$i = *addr
+	
+	*/
+	add(MipsCode::note, "load to the register.");
+		if (item->getKind() == TokenKind::TEMP_CON || item->getKind() == TokenKind::CONST)
+		{
+			add(MipsCode::li, _$i, to_string(item->getValue()));
+			return;
+		}
+		else if (item->getKind() == TokenKind::FUNC) {
+			add(MipsCode::addi, _$i, $v0, "0");
+			return;
+		}
+		else if (item->getKind() == TokenKind::PARAVAR && !_loadaddrvalue) {
+			// $t7 = addr .
+			add(MipsCode::lw, $t7, to_string(item->getOffset()), $fp);
+			// _$i = [$t7]
+			add(MipsCode::lw, _$i, "0", $t7);
+			return;
+		}
+
+		if (current_table->getItem(item->getName()) != NULL) {
+			add(MipsCode::lw, _$i, to_string(item->getOffset()), $fp);
+		}
+		else {
+			int display_base = item->getLevel() * 4 + 4;
+			if (_$i == "$t0")
+				cout << "this is a bug" << endl;
+			add(MipsCode::lw, $t7, to_string(display_base), $fp);
+			add(MipsCode::lw, _$i, to_string(item->getOffset()), $t7);
+		}
 }
 
 //$i -> memory of item.
@@ -311,6 +340,11 @@ void MipsInstr::storeMemory(const string _$i, SymbolItem* item) {
 	if (item->getKind() == FUNC) {
 		// -36 is the return value
 		add(MipsCode::sw, _$i, "-36", $fp);
+		return;
+	}
+	else if (item->getKind() == TokenKind::PARAVAR) {
+		add(MipsCode::lw, $t7, to_string(item->getOffset()), $fp);
+		add(MipsCode::sw, _$i, "0", $t7);
 		return;
 	}
 	if (current_table->getItem(item->getName()) != NULL) {
@@ -325,13 +359,15 @@ void MipsInstr::storeMemory(const string _$i, SymbolItem* item) {
 
 //[des] = src
 void MipsInstr::HandleAssignAddr(SymbolItem* addr,SymbolItem* value) {
-		loadReg(value, $t0);
-		loadReg(addr, $t1);
-		add(MipsCode::sw, $t0,"0", $t1);
+	add(MipsCode::note, "assignaddr");
+	loadReg(value, $t0);
+	loadReg(addr, $t1);
+	add(MipsCode::sw, $t0,"0", $t1);
 }
 
 //temp = abstract add or array + offset.
 void MipsInstr::HandleArrayAddr(SymbolItem* addr, SymbolItem* base, SymbolItem* offset) {
+	add(MipsCode::note, "arrayaddr");
 	getRef(base);
 	loadReg(offset, $t1);
 	add(MipsCode::li, $t2, "4");
@@ -342,6 +378,7 @@ void MipsInstr::HandleArrayAddr(SymbolItem* addr, SymbolItem* base, SymbolItem* 
 
 // value = [addr];
 void MipsInstr::HandleArrayAssign(SymbolItem* value , SymbolItem* addr) {
+	add(MipsCode::note, "arrayassign");
 	//addr getValue;
 	// $t0 = address of addr
 	getRef(addr);
@@ -354,12 +391,14 @@ void MipsInstr::HandleArrayAssign(SymbolItem* value , SymbolItem* addr) {
 
 // des = src;
 void MipsInstr::HandleAssign(SymbolItem* des, SymbolItem* src) {
+	add(MipsCode::note, "assign");
 	loadReg(src,$t0);
 	storeMemory($t0, des);
 }
 
 //Handle the calc instruction
 void MipsInstr::HandleCalc(Opcode choose,SymbolItem* des,SymbolItem* src1,SymbolItem* src2){
+	add(MipsCode::note, "calc"); 
 	loadReg(src1, $t0);
 	loadReg(src2, $t1);
 	if (choose == Opcode::MUL) {
@@ -380,6 +419,7 @@ void MipsInstr::HandleCalc(Opcode choose,SymbolItem* des,SymbolItem* src1,Symbol
 
 // src = src + 1
 void MipsInstr::HandleInc(SymbolItem* src) {
+	add(MipsCode::note, "incerement");
 	loadReg(src, $t0);
 	add(MipsCode::addi, $t0, $t0, "1");
 	storeMemory($t0, src);
@@ -387,6 +427,7 @@ void MipsInstr::HandleInc(SymbolItem* src) {
 
 // src = src - 1
 void MipsInstr::HandleDec(SymbolItem* src) {
+	add(MipsCode::note, "decrement");
 	loadReg(src, $t0);
 	add(MipsCode::subi, $t0, $t0, "1");
 	storeMemory($t0, src);
@@ -398,13 +439,41 @@ void MipsInstr::HandleSetLabel(SymbolItem* des) {
 
 // $s0 = - $t0;
 void MipsInstr::HandleNeg(SymbolItem* des, SymbolItem* src) {
+	add(MipsCode::note, "neg");
 	loadReg(src, $t0);
 	add(MipsCode::sub, $s0, $0, $t0);
 	storeMemory($s0, des);
 }
 
+//handle the read statement.
+void MipsInstr::HandleRead(SymbolItem* des) {
+	add(MipsCode::note, "read");
+	if (des->getType() == TokenType::chartyp) {
+		add(MipsCode::li, $v0, "5");
+		add(MipsCode::syscall);
+	}
+	else if (des->getType() == TokenType::chartyp) {
+		add(MipsCode::li, $v0, "12");
+		add(MipsCode::syscall);
+	}
+	storeMemory($v0, des);
+}
+
 void MipsInstr::HandlePush(SymbolItem* des) {
+	add(MipsCode::note, "push");
 	loadReg(des, $t0);
+	add(MipsCode::sw, $t0, "0", $sp);
+	add(MipsCode::subi, $sp, $sp, "4");
+}
+
+void MipsInstr::HandlePushVar(SymbolItem* des) {
+	add(MipsCode::note, "push var");
+	if (des->getKind() == TokenKind::VAR || des->getKind() == TokenKind::PARA)
+		getRef(des);
+	//get the value of the paravar
+	else if (des->getKind() == TokenKind::PARAVAR)
+		loadReg(des,$t0,true);
+
 	add(MipsCode::sw, $t0, "0", $sp);
 	add(MipsCode::subi, $sp, $sp, "4");
 }
@@ -447,7 +516,7 @@ void MipsInstr::getRef(SymbolItem* item) {
 		add(MipsCode::addi, $t0, $fp, to_string(item->getOffset()));
 	}
 	else {
-		int display_base = item->getLevel() * 4;
+		int display_base = item->getLevel() * 4 + 4;
 		add(MipsCode::lw, $t0, to_string(display_base), $fp);
 		add(MipsCode::addi, $t0, $t0, to_string(item->getOffset()));
 	}
