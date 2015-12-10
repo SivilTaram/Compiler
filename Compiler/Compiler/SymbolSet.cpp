@@ -132,7 +132,7 @@ void SymbolSet::calcOffset() {
 
 	int current_offset = 0;
 
-	current_offset += level * 4;
+	current_offset += level * 4 + 8;
 
 	//as a reserve order to set the offset.
 	for (int i = local_list.size() - 1; i >= 0; i--) {
@@ -148,13 +148,13 @@ void SymbolSet::calcOffset() {
 	//the return address and s0~s7
 	stack_size += 9;
 
-	if (this->getProcItem()->getKind() == TokenKind::FUNC)
+ 	if (this->getProcItem()->getKind() == TokenKind::FUNC)
 	{
-		current_offset = -44;
+		current_offset = -40;
 		stack_size += 1;
 	}
 	else
-		current_offset = -40;
+		current_offset = -36;
 
 	vector<SymbolItem*>::iterator iter = local_list.begin();
 
@@ -182,9 +182,6 @@ void SymbolSet::calcOffset() {
 			item->setOffset(0);
 			SymbolSet* next_table = table_map[item->getName()];
 			next_table->calcOffset();
-		}
-		else {
-			item->setOffset(0);
 		}
 		iter++;
 	}

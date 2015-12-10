@@ -24,7 +24,7 @@ SymbolItem* RootSymbolSet::search(string _name) {
 	result = NULL;
 	while (temp != NULL) {
 		//find the func
-		result = temp->getItem(current_table->getProcName() + _name + "_");
+		result = temp->getItem(temp->getProcName() + _name + "_");
 		if (result != NULL)
 			return result;
 		temp = temp->father_table;

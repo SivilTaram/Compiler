@@ -50,10 +50,14 @@ void MipsInstr::Handle(QuaterInstr* _middle) {
 		HandleBranch(choose,_middle->getDes(),_middle->getSrc1(),_middle->getSrc2()); break;
 	case JUMP:
 		HandleJump(_middle->getDes()); break;
-	case BEGIN:HandleBegin(_middle->getDes());break;
-	case END:HandleEnd(_middle->getDes()); break;
-	case CALL:HandleCall(_middle->getDes(), _middle->getSrc1());break;
-	case PUSH:break;
+	case BEGIN:
+		HandleBegin(_middle->getDes());break;
+	case END:
+		HandleEnd(_middle->getDes()); break;
+	case CALL:
+		HandleCall(_middle->getDes(), _middle->getSrc1());break;
+	case PUSH:
+		HandlePush(_middle->getDes()); break;
 	case PUSHVAR:break;
 	case INC:
 		HandleInc(_middle->getDes()); break;
@@ -108,15 +112,22 @@ void MipsInstr::HandleBegin(SymbolItem* des) {
 	// 
 	add(MipsCode::label, current_table->getProcName() + ":");
 	// move $fp,$sp to update the $fp.
-	add(MipsCode::move, $fp, $sp);	
-	add(MipsCode::subi, $sp, $sp, "4");
-	add(MipsCode::sw, $ra, "-4", $fp);
+	// $fp = $sp
+	add(MipsCode::move, $fp, $sp);
+	/*
+	$ra --------- $fp
+	...
+	$s7
+	local_1
+	local_2
+	local_3  ---- $sp
+	*/
+	add(MipsCode::sw, $ra, "0", $fp);
 	for (int i = 0; i < 8; i++) {
-		add(MipsCode::sw, "$s" + to_string(i), to_string(-4 - (i + 1) * 4), $fp);
+		add(MipsCode::sw, "$s" + to_string(i), to_string(-4 - i * 4), $fp);
 	}
-
-	int current_stack_size = current_table->getStackSize();
-	add(MipsCode::subi, $sp, $sp, to_string(current_stack_size));
+	int size = current_table->getStackSize();
+	add(MipsCode::subi, $sp, $sp, to_string(size));
 }
 
 void MipsInstr::HandleEnd(SymbolItem* des) {
@@ -136,14 +147,15 @@ void MipsInstr::HandleEnd(SymbolItem* des) {
 	jr $ra
 	*/
 	if (current_table->getLevel() != 0) {
-		add(MipsCode::lw, $ra, "-4", $fp);
+		add(MipsCode::lw, $ra, "0", $fp);
 		for (int i = 0; i < 8; i++) {
-			add(MipsCode::lw, "$s" + to_string(i), to_string(-4 - (i + 1) * 4), $fp);
+			add(MipsCode::lw, "$s" + to_string(i), to_string(-4 - i * 4), $fp);
 		}
 		if (current_table->getProcItem()->getKind() == TokenKind::FUNC)
-			add(MipsCode::lw, $v0, "-40", $fp);
-		add(MipsCode::lw, $t0, to_string(current_table->getDisplaySize()), $fp);
-		add(MipsCode::addi, $t1, $fp, to_string(current_table->getArgsSize() + current_table->getDisplaySize()));
+			add(MipsCode::lw, $v0, "-36", $fp);
+		// $ra ----- 0
+		add(MipsCode::lw, $t0, to_string(current_table->getDisplaySize()+4), $fp);
+		add(MipsCode::addi, $t1, $fp, to_string(current_table->getArgsSize() + current_table->getDisplaySize()+4));
 		add(MipsCode::move, $sp, $t1);
 		add(MipsCode::move, $fp, $t0);
 		add(MipsCode::jr, $ra);
@@ -226,14 +238,12 @@ void MipsInstr::HandleCall(SymbolItem* _caller,SymbolItem* _callee) {
 	/*
 	...
 	abp(1)
-	abp(0)
-	---------- $fp
+	abp(0)	---------- $fp
 	...
 	pre $fp
 	abp(n)
 	abp(n-1)...
-	abp(0)
-	----------- $sp
+	abp(0)	----------- $sp
 	*/
 #ifdef DEBUG
 	cout << "debug call" << endl;
@@ -243,13 +253,11 @@ void MipsInstr::HandleCall(SymbolItem* _caller,SymbolItem* _callee) {
 	SymbolSet* callee_table = (SymbolSet*)_callee;
 	// subi $sp,$sp,4
 	// sw $fp,0($sp)
-	add(MipsCode::subi, $sp, $sp, "4");
 	add(MipsCode::sw, $fp, "0", $sp);
+	add(MipsCode::subi, $sp, $sp, "4");
 	// subi $sp,$sp,display_size
-	int size = callee_table->getDisplaySize();
-	if(size!=0)
-		add(MipsCode::subi, $sp, $sp, to_string(size));
 	// if the level is less or equal,then drag calller's SL
+	int size = callee_table->getDisplaySize();
 	if (callee_table->getLevel() <= caller_table->getLevel())
 	{
 		for (int i = 0; i < size / 4; i++) {
@@ -269,6 +277,8 @@ void MipsInstr::HandleCall(SymbolItem* _caller,SymbolItem* _callee) {
 		}
 		add(MipsCode::sw, $fp, to_string(i * 4), $sp);
 	}
+	if (size != 0)
+		add(MipsCode::subi, $sp, $sp, to_string(size));
 	// jal callee_table;
 	add(MipsCode::jal,callee_table->getProcName());
 }
@@ -280,11 +290,15 @@ void MipsInstr::loadReg(SymbolItem* item,const string _$i) {
 		add(MipsCode::li, _$i, to_string(item->getValue()));
 		return;
 	}
+	else if (item->getKind() == TokenKind::FUNC) {
+		add(MipsCode::addi, _$i, $v0, "0");
+		return;
+	}
 	if (current_table->getItem(item->getName())!=NULL) {
 		add(MipsCode::lw, _$i, to_string(item->getOffset()), $fp);
 	}
 	else {
-		int display_base = item->getLevel()* 4;
+		int display_base = item->getLevel() * 4 + 4;
 		if (_$i == "$t0")
 			cout << "this is a bug" << endl;
 		add(MipsCode::lw, $t7, to_string(display_base), $fp);
@@ -294,11 +308,16 @@ void MipsInstr::loadReg(SymbolItem* item,const string _$i) {
 
 //$i -> memory of item.
 void MipsInstr::storeMemory(const string _$i, SymbolItem* item) {
+	if (item->getKind() == FUNC) {
+		// -36 is the return value
+		add(MipsCode::sw, _$i, "-36", $fp);
+		return;
+	}
 	if (current_table->getItem(item->getName()) != NULL) {
 		add(MipsCode::sw, _$i, to_string(item->getOffset()), $fp);
 	}
 	else {
-		int display_base = item->getLevel()* 4;
+		int display_base = item->getLevel()* 4 + 4;
 		add(MipsCode::lw, $t7, to_string(display_base), $fp);
 		add(MipsCode::sw, _$i, to_string(item->getOffset()), $t7);
 	}
@@ -384,10 +403,17 @@ void MipsInstr::HandleNeg(SymbolItem* des, SymbolItem* src) {
 	storeMemory($s0, des);
 }
 
+void MipsInstr::HandlePush(SymbolItem* des) {
+	loadReg(des, $t0);
+	add(MipsCode::sw, $t0, "0", $sp);
+	add(MipsCode::subi, $sp, $sp, "4");
+}
+
 string MipsInstr::genString() {
 	static int count = 1;
 	stringstream s;
 	s << "_string" << count ;
+	count++;
 	return s.str();
 }
 //void MipsInstr::HandleCalc(Opcode choose,)
@@ -426,4 +452,3 @@ void MipsInstr::getRef(SymbolItem* item) {
 		add(MipsCode::addi, $t0, $t0, to_string(item->getOffset()));
 	}
 }
-
