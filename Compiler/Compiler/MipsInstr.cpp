@@ -17,6 +17,12 @@ const string $a0 = "$a0";
 const string $0 = "$0";
 const string $t7 = "$t7";
 
+string tostring(int _value) {
+	stringstream ss;
+	ss << _value;
+	return ss.str();
+}
+
 void MipsInstr::Handle(QuaterInstr* _middle) {
 	Opcode choose = _middle->getOpType();
 	switch (choose)
@@ -128,10 +134,10 @@ void MipsInstr::HandleBegin(SymbolItem* des) {
 	*/
 	add(MipsCode::sw, $ra, "0", $fp);
 	for (int i = 0; i < 8; i++) {
-		add(MipsCode::sw, "$s" + to_string(i), to_string(-4 - i * 4), $fp);
+		add(MipsCode::sw, "$s" + tostring(i), tostring(-4 - i * 4), $fp);
 	}
 	int size = current_table->getStackSize();
-	add(MipsCode::subi, $sp, $sp, to_string(size));
+	add(MipsCode::subi, $sp, $sp, tostring(size));
 }
 
 void MipsInstr::HandleEnd(SymbolItem* des) {
@@ -154,13 +160,13 @@ void MipsInstr::HandleEnd(SymbolItem* des) {
 	if (current_table->getLevel() != 0) {
 		add(MipsCode::lw, $ra, "0", $fp);
 		for (int i = 0; i < 8; i++) {
-			add(MipsCode::lw, "$s" + to_string(i), to_string(-4 - i * 4), $fp);
+			add(MipsCode::lw, "$s" + tostring(i), tostring(-4 - i * 4), $fp);
 		}
 		if (current_table->getProcItem()->getKind() == TokenKind::FUNC)
 			add(MipsCode::lw, $v0, "-36", $fp);
 		// $ra ----- 0
-		add(MipsCode::lw, $t0, to_string(current_table->getDisplaySize()+4), $fp);
-		add(MipsCode::addi, $t1, $fp, to_string(current_table->getArgsSize() + current_table->getDisplaySize()+4));
+		add(MipsCode::lw, $t0, tostring(current_table->getDisplaySize()+4), $fp);
+		add(MipsCode::addi, $t1, $fp, tostring(current_table->getArgsSize() + current_table->getDisplaySize()+4));
 		add(MipsCode::move, $sp, $t1);
 		add(MipsCode::move, $fp, $t0);
 		add(MipsCode::jr, $ra);
@@ -204,12 +210,12 @@ void MipsInstr::HandleWrite(SymbolItem* item) {
 	add(MipsCode::note, "write");
 	if (item->getKind() == TokenKind::CONST || item->getKind() == TokenKind::TEMP_CON) {
 		if (item->getType() == TokenType::chartyp) {
-			add(MipsCode::addi, $a0, $0, to_string(item->getValue()));
+			add(MipsCode::addi, $a0, $0, tostring(item->getValue()));
 			add(MipsCode::li, $v0, "11");
 			add(MipsCode::syscall);
 		}
 		else if (item->getType() == TokenType::inttyp) {
-			add(MipsCode::addi, $a0, $0, to_string(item->getValue()));
+			add(MipsCode::addi, $a0, $0, tostring(item->getValue()));
 			add(MipsCode::li, $v0, "1");
 			add(MipsCode::syscall);
 		}
@@ -272,7 +278,7 @@ void MipsInstr::HandleCall(SymbolItem* _caller,SymbolItem* _callee) {
 	if (callee_table->getLevel() <= caller_table->getLevel())
 	{
 		for (int i = size/4 - 1; i >=0 ; i--) {
-			add(MipsCode::lw, $s0, to_string(i * 4 + 4 ), $fp);
+			add(MipsCode::lw, $s0, tostring(i * 4 + 4 ), $fp);
 			add(MipsCode::sw, $s0, "0", $sp);
 			add(MipsCode::subi, $sp, $sp, "4");
 		}
@@ -286,7 +292,7 @@ void MipsInstr::HandleCall(SymbolItem* _caller,SymbolItem* _callee) {
 		if (caller_table->getDisplaySize() != 0)
 		{
 			for (i = caller_table->getDisplaySize() / 4 - 1; i >=0 ; i--) {
-				add(MipsCode::lw, $s0, to_string(i * 4 + 4), $fp);
+				add(MipsCode::lw, $s0, tostring(i * 4 + 4), $fp);
 				add(MipsCode::sw, $s0, "0", $sp);
 				add(MipsCode::subi, $sp, $sp, "4");
 			}
@@ -305,10 +311,10 @@ void MipsInstr::loadReg(SymbolItem* item,const string _$i, bool _loadaddrvalue) 
 	_$i = *addr
 	
 	*/
-	add(MipsCode::note, "load to the register.");
+	//add(MipsCode::note, "load to the register.");
 		if (item->getKind() == TokenKind::TEMP_CON || item->getKind() == TokenKind::CONST)
 		{
-			add(MipsCode::li, _$i, to_string(item->getValue()));
+			add(MipsCode::li, _$i, tostring(item->getValue()));
 			return;
 		}
 		else if (item->getKind() == TokenKind::FUNC) {
@@ -317,21 +323,23 @@ void MipsInstr::loadReg(SymbolItem* item,const string _$i, bool _loadaddrvalue) 
 		}
 		else if (item->getKind() == TokenKind::PARAVAR && !_loadaddrvalue) {
 			// $t7 = addr .
-			add(MipsCode::lw, $t7, to_string(item->getOffset()), $fp);
+			add(MipsCode::note, "paravar");
+			add(MipsCode::lw, $t7, tostring(item->getOffset()), $fp);
 			// _$i = [$t7]
 			add(MipsCode::lw, _$i, "0", $t7);
 			return;
 		}
 
+		if (item->getKind() == TokenKind::PARAVAR && _loadaddrvalue)
+			add(MipsCode::note, "paravar value");
+
 		if (current_table->getItem(item->getName()) != NULL) {
-			add(MipsCode::lw, _$i, to_string(item->getOffset()), $fp);
+			add(MipsCode::lw, _$i, tostring(item->getOffset()), $fp);
 		}
 		else {
 			int display_base = item->getLevel() * 4 + 4;
-			if (_$i == "$t0")
-				cout << "this is a bug" << endl;
-			add(MipsCode::lw, $t7, to_string(display_base), $fp);
-			add(MipsCode::lw, _$i, to_string(item->getOffset()), $t7);
+			add(MipsCode::lw, $t7, tostring(display_base), $fp);
+			add(MipsCode::lw, _$i, tostring(item->getOffset()), $t7);
 		}
 }
 
@@ -343,17 +351,17 @@ void MipsInstr::storeMemory(const string _$i, SymbolItem* item) {
 		return;
 	}
 	else if (item->getKind() == TokenKind::PARAVAR) {
-		add(MipsCode::lw, $t7, to_string(item->getOffset()), $fp);
+		add(MipsCode::lw, $t7, tostring(item->getOffset()), $fp);
 		add(MipsCode::sw, _$i, "0", $t7);
 		return;
 	}
 	if (current_table->getItem(item->getName()) != NULL) {
-		add(MipsCode::sw, _$i, to_string(item->getOffset()), $fp);
+		add(MipsCode::sw, _$i, tostring(item->getOffset()), $fp);
 	}
 	else {
 		int display_base = item->getLevel()* 4 + 4;
-		add(MipsCode::lw, $t7, to_string(display_base), $fp);
-		add(MipsCode::sw, _$i, to_string(item->getOffset()), $t7);
+		add(MipsCode::lw, $t7, tostring(display_base), $fp);
+		add(MipsCode::sw, _$i, tostring(item->getOffset()), $t7);
 	}
 }
 
@@ -497,7 +505,7 @@ void MipsInstr::translate() {
 		Handle(single_middle);
 		iter++;
 	}
-	ofstream fout("F://Compiler//output.txt");
+	ofstream fout("output/output_binary.txt");
 	fout << ".data" << endl;
 	for (int i = 0; i < object_datas.size(); i++) {
 		fout << object_datas[i].setData() << endl;
@@ -513,11 +521,11 @@ void MipsInstr::translate() {
 //the address of the symbol item strore in the $t0
 void MipsInstr::getRef(SymbolItem* item) {
 	if (current_table->getItem(item->getName()) != NULL) {
-		add(MipsCode::addi, $t0, $fp, to_string(item->getOffset()));
+		add(MipsCode::addi, $t0, $fp, tostring(item->getOffset()));
 	}
 	else {
 		int display_base = item->getLevel() * 4 + 4;
-		add(MipsCode::lw, $t0, to_string(display_base), $fp);
-		add(MipsCode::addi, $t0, $t0, to_string(item->getOffset()));
+		add(MipsCode::lw, $t0, tostring(display_base), $fp);
+		add(MipsCode::addi, $t0, $t0, tostring(item->getOffset()));
 	}
 }

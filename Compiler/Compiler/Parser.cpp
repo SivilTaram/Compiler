@@ -793,8 +793,13 @@ SymbolItem* Parser::factor(){
 			SymbolItem* func = callFunc(ident);
 			return func;
 		}
-		else
+		else if (ident!=NULL && ident->getKind() == TokenKind::FUNC) {
+			callFunc(ident);
 			return ident;
+		}
+		else {
+			return ident;
+		}
 	}
 	// 45
 	else if (match(Symbol::number)) {
