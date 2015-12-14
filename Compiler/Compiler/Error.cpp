@@ -1,4 +1,5 @@
 #include "error.h"
+#include <sstream>
 
 Error::Error() {
 	is_success = true;
@@ -9,11 +10,14 @@ int Error::getErrorCount() {
 };
 
 void Error::errorMessage(int errortype,int line) {
-	string Message = "Line " + (line);
+	stringstream Message;
+	Message << "Error in " << line << ":";
+	error_count++;
 	switch (errortype)
 	{
-	case 1:Message += "";
+	case 1:Message << " " << endl;
 	default:
 		break;
 	}
+	error_messages.push_back(Message.str());
 }

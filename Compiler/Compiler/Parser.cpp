@@ -14,6 +14,41 @@ using namespace std;
 int level = 0;
 #endif // DEBUG
 
+const symset constbegsys = { 
+	Symbol::plus ,
+	Symbol::minus,
+	Symbol::integersym,
+	Symbol::charsym,
+	Symbol::ident 
+};
+const symset typebegsys = { 
+	Symbol::ident,
+	Symbol::arraysym 
+};
+const symset blockbegsys = { 
+	Symbol::constsym, 
+	Symbol::varsym , 
+	Symbol::procsym ,
+	Symbol::beginsym, 
+	Symbol::funcsym 
+};
+const symset facbegsys = { 
+	Symbol::integersym,
+	Symbol::charsym,
+	Symbol::ident,
+	Symbol::lparen,
+	Symbol::nullsym 
+};
+const symset statbegsys = { 
+	Symbol::beginsym,
+	Symbol::ifsym,
+	Symbol::writesym,
+	Symbol::readsym,
+	Symbol::dosym,
+	Symbol::forsym,
+	Symbol::ident
+};
+
 //except is suitable for one expression
 //or something shorter.
 void Parser::expect(Symbol sym) {
@@ -168,6 +203,7 @@ SymbolItem* Parser::get(string _ident_name) {
 //skip some words until a valid follow set.
 void Parser::skip(symset fsys,int error_code) {
 	Error::errorMessage(error_code, LineNo);
+	//read while the next() into.
 	while (fsys.find(current_token.getType()) == fsys.end())
 	{
 		next();
@@ -175,7 +211,6 @@ void Parser::skip(symset fsys,int error_code) {
 };
 //test whether the current_token is valid.
 void Parser::test(symset s1,symset s2,int error_code) {
-
 	//not found
 	if (s1.find(current_token.getType()) == s1.end()) {
 		symset stop_set(s1.begin(), s1.end());

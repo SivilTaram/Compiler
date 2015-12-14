@@ -6,14 +6,14 @@
 
 using namespace std;
 
-class Error {
+static class Error {
 public:
 	Error();
-	int getErrorCount();
+	static int getErrorCount();
 	static void errorMessage(int errortype, int line);
 private:
-	bool is_success;
-	int error_count;
+	static bool is_success;
+	static int error_count;
 	static vector<string> error_messages;
 };
 
