@@ -8,6 +8,7 @@
 #include "rootsymbolset.h"
 #include "middlecode.h"
 #include "mipsinstr.h"
+#include "error.h"
 
 //#define DEBUG
 
@@ -15,29 +16,29 @@ typedef set<Symbol> symset;
 
 class  Parser {
 private:
+	Error error_handle;
 	Token current_token;
 	Lexer token_lexer;
 	RootSymbolSet symbol_set;
 	MiddleCode middle_code;
 
 public:
-	Parser(string file_path) :token_lexer(file_path){};
+	Parser(string file_path) :token_lexer(file_path,error_handle){};
 	bool match(Symbol sym);
 	void next();
 	void parser();
 	void translate();
 	//If the next symbol is equal to sym,then next;
 	//Else skip some words.
-	void expect(Symbol sym);
+	void expect(Symbol sym,string message);
 
 	SymbolItem* get(string _ident_name);
 	//skip some words until a valid follow set.
-	void skip(symset s1,int error_code);
+	void skip(symset fsys, int error_code);
 	//test whether the current_token is valid.
 	void test(symset s1, symset s2, int error_code);
 
-	void block();
-
+	void block(symset blockbegin);
 	//Handle const declaration
 	void constDec();
 	//Handle const define

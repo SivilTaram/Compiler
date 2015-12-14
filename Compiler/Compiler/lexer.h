@@ -1,5 +1,5 @@
 #pragma once
-
+#include"error.h"
 #define LINEMAX 1024
 #define NMAX 20
 using namespace std;
@@ -17,11 +17,12 @@ private:
 	int cc = 0;
 	int linenum = 0;
 	char buf[LINEMAX] = "";
+	Error error_handle;
 
 public:
 	//values for token 
 	Symbol sym;
-	Lexer(string filename);
+	Lexer(string filename, Error& _error_handle);
 	void getch();
 	Token getsym();
 	void initialReserved();

@@ -13,7 +13,7 @@ public:
 	vector<SymbolItem*> getArgList(string _name);
 	void printSymbolSet();
 
-	SymbolSet* getRootSet();
+	SymbolSet* getRootSet(); 
 	SymbolSet* getCurrentSet();
 	SymbolSet* serachTable(string _name);
 	bool RootSymbolSet::goback();

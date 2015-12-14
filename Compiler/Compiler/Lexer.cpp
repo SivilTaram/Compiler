@@ -11,7 +11,7 @@
 
 using namespace std;
 
-Lexer::Lexer(string filename) {
+Lexer::Lexer(string filename,Error& _error_handle) :error_handle(_error_handle) {
 	//Read from source code.
 	infile.open(filename);
 	initialReserved();
@@ -122,7 +122,7 @@ Token Lexer::getsym() {
 		} while (isdigit(peek));
 		if (size(token) > NMAX)
 		{
-			Error::errorMessage(2, linenum);
+			error_handle.errorMessage(2, linenum);
 			token.clear();
 		}
 		else {
@@ -193,7 +193,7 @@ Token Lexer::getsym() {
 		}
 		else
 		{
-			Error::errorMessage(3, linenum);
+			error_handle.errorMessage(3, linenum);
 		}
 	}
 	// ' ' const char.
@@ -213,7 +213,7 @@ Token Lexer::getsym() {
 		else
 		{
 			token.clear();
-			Error::errorMessage(4, linenum);
+			error_handle.errorMessage(4, linenum);
 			return Token(Symbol::nullsym, linenum);
 		}
 	}
@@ -227,7 +227,7 @@ Token Lexer::getsym() {
 		map<string, Symbol>::iterator it = reserved.find(str);
 		if (it == reserved.end())
 		{
-			Error::errorMessage(6, linenum);
+			error_handle.errorMessage(6, linenum);
 			sym = Symbol::nullsym;
 			getch();
 			return Token(sym,linenum);
