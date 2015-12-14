@@ -23,7 +23,8 @@ const symset constbegsys = {
 };
 const symset typebegsys = { 
 	Symbol::integersym,
-	Symbol::charsym
+	Symbol::charsym,
+	Symbol::arraysym
 };
 const symset blockbegsys = { 
 	Symbol::constsym, 

@@ -125,7 +125,7 @@ Token Lexer::getsym() {
 			token.push_back(peek);
 			getch();
 		} while (isdigit(peek));
-		if (size(token) > NMAX)
+		if (token.size() > NMAX)
 		{
 			error_handle.errorMessage(2, linenum);
 			token.clear();

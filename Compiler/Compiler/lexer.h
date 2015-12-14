@@ -16,7 +16,7 @@ private:
 	int ll = 0;
 	int cc = 0;
 	int linenum = 0;
-	char buf[LINEMAX] = "";
+	char buf[LINEMAX];
 	Error error_handle;
 
 public:
