@@ -2,10 +2,11 @@
 #include "lexer.h"
 #include "error.h"
 #include <queue>
+#include <sstream>
 
 //#define DEBUG_NEXT
 
-#define LineNo (current_token.getLineNo()+1)
+#define LineNo (current_token.getLineNo())
 #define PRINT(x) cout << LineNo <<" :"; for(int i=0;i<level;i++){cout<< "- ";} cout << x << endl
 //#define DEBUG_NEXT
 using namespace std;
@@ -17,13 +18,12 @@ int level = 0;
 const symset constbegsys = { 
 	Symbol::plus ,
 	Symbol::minus,
-	Symbol::integersym,
-	Symbol::charsym,
-	Symbol::ident 
+	Symbol::number,
+	Symbol::charconst
 };
 const symset typebegsys = { 
-	Symbol::ident,
-	Symbol::arraysym 
+	Symbol::integersym,
+	Symbol::charsym
 };
 const symset blockbegsys = { 
 	Symbol::constsym, 
@@ -32,14 +32,14 @@ const symset blockbegsys = {
 	Symbol::beginsym, 
 	Symbol::funcsym 
 };
-const symset facbegsys = { 
-	Symbol::integersym,
-	Symbol::charsym,
+const symset facbegsys = {
 	Symbol::ident,
 	Symbol::lparen,
-	Symbol::nullsym 
+	Symbol::number
 };
 const symset statbegsys = { 
+	Symbol::endsym,
+	Symbol::semicolon,
 	Symbol::beginsym,
 	Symbol::ifsym,
 	Symbol::writesym,
@@ -154,8 +154,7 @@ void Parser::expect(Symbol sym,string meesage) {
 	}
 	else {
 		//Except something but it doesn't appear.
-		error_handle.errorMessage(9, sym, meesage);
-		next();
+		error_handle.errorMessage(9,LineNo,meesage);
 	}
 }
 
@@ -188,6 +187,19 @@ void Parser::next() throw(eofexception){
 #endif
 };
 
+string Parser::getErrorString(Token token) {
+	stringstream outstream;
+	if (token.getType() == Symbol::ident)
+		outstream << token.getName();
+	else if (token.getType() == Symbol::charconst)
+		outstream << (char)token.getValue();
+	else if (token.getType() == Symbol::strconst)
+		outstream << token.getName();
+	else if (token.getType() == Symbol::number)
+		outstream << token.getValue();
+	return outstream.str();
+}
+
 //accoring the ident_name to get the symbol item.
 //Important!!!:the ident_name include the function's name or the procedure's name.
 SymbolItem* Parser::get(string _ident_name) {
@@ -196,7 +208,7 @@ SymbolItem* Parser::get(string _ident_name) {
 		return item;
 	//The Undefined ident;
 	error_handle.errorMessage(40, LineNo,_ident_name);
-	item = symbol_set.insert(_ident_name, TokenKind::VAR, TokenType::notyp);
+	item = symbol_set.insert(_ident_name, TokenKind::UNDEFINE, TokenType::notyp);
 	return item;
 }
 
@@ -266,7 +278,7 @@ void Parser::block(symset _block) {
 	PRINT("block");
 #endif // DEBUG
 	try {
-		test(blockbegsys, { Symbol::period,Symbol::semicolon }, 60);
+		skip(blockbegsys, 62);
 		if (match(Symbol::constsym)) {
 			next();
 			constDec();
@@ -277,7 +289,6 @@ void Parser::block(symset _block) {
 		if (match(Symbol::varsym))
 		{
 			next();
-			test(constbegsys, { Symbol::comma,Symbol::semicolon }, 61);
 			variableDec();
 		}
 		while (match(Symbol::procsym) || match(Symbol::funcsym))
@@ -312,7 +323,6 @@ void Parser::block(symset _block) {
 		middle_code.gen(Opcode::END, (SymbolItem*)symbol_set.getCurrentSet(),NULL,NULL);
 	}
 	catch (eofexception) {
-		cout << "unexcepted file end." << endl;
 	}
 #ifdef DEBUG
 	level--;
@@ -330,7 +340,6 @@ void Parser::constDec() {
 	if (match(Symbol::ident))
 	{
 		while (1) {
-			skip(constbegsys,61);
 			constDef();
 			if (match(Symbol::comma))
 				next();
@@ -373,6 +382,7 @@ void Parser::constDef() {
 				error_handle.errorMessage(42, LineNo);
 			next();
 			bool minus = false;
+			skip(constbegsys, 61);
 			if (match(Symbol::plus) || match(Symbol::minus)) {
 				if (match(Symbol::minus))
 					minus = true;
@@ -419,13 +429,10 @@ void Parser::variableDec() {
 	PRINT("variable Dec");
 #endif // DEBUG
 	while (1) {
-		if(match(Symbol::ident))
-			variableDef();
-		else
-		{
-			error_handle.errorMessage(17, LineNo);
-			next();
-		}
+		if (!match(Symbol::ident))
+			error_handle.errorMessage(19, LineNo, getErrorString(current_token));
+		skip({ Symbol::ident }, 65);
+		variableDef();
 		expect(Symbol::semicolon, ";");
 		//identifier or others.
 		if (match(Symbol::ident))
@@ -452,7 +459,7 @@ void Parser::variableDef() {
 			var_name->push(ident_name);
 		}
 		else {
-			error_handle.errorMessage(18, LineNo);
+			error_handle.errorMessage(19, LineNo, getErrorString(current_token));
 		}
 		next();
 		// :
@@ -463,6 +470,7 @@ void Parser::variableDef() {
 	}
 	if (match(Symbol::colon)) {
 		next();
+		skip(typebegsys, 66);
 		varType(var_name);
 	}
 #ifdef DEBUG
@@ -488,7 +496,7 @@ void Parser::varType(queue<string>* var_name) {
 				// the front of var_name is the latest variables.
 				//[Error] Var repeated.
 				if (!symbol_set.insert(var_name->front(), TokenKind::VAR, TokenType::inttyp))
-					error_handle.errorMessage(42, LineNo);
+					error_handle.errorMessage(43, LineNo,var_name->front());
 				var_name->pop();
 			}
 		}
@@ -497,7 +505,7 @@ void Parser::varType(queue<string>* var_name) {
 				// the front of var_name is the latest variables.
 				//[Error] Var repeated.
 				if (!symbol_set.insert(var_name->front(), TokenKind::VAR, TokenType::chartyp))
-					error_handle.errorMessage(42, LineNo);
+					error_handle.errorMessage(43, LineNo,var_name->front());
 				var_name->pop();
 			}
 		}
@@ -531,7 +539,7 @@ void Parser::procDec() {
 		SymbolItem* proc = symbol_set.insert(proc_name, TokenKind::PROC, TokenType::voidtyp);
 		if (proc == NULL)
 			//the procedure is built.
-			error_handle.errorMessage(42,LineNo);
+			error_handle.errorMessage(41,LineNo,proc_name);
 		next();
 		// if parameter table's first is '(',then loop
 		// to map the parameter list.
@@ -555,7 +563,7 @@ void Parser::procDec() {
 	}
 	else {
 		//No.11 should define identity at the first of proc.After procedure.
-		error_handle.errorMessage(11, LineNo);
+		error_handle.errorMessage(11, LineNo, getErrorString(current_token));
 	}
 #ifdef DEBUG
 	level--;
@@ -615,12 +623,12 @@ void Parser::basicType(queue<string> *args,TokenKind kind) {
 	else
 	{
 		//No.12 except type after ':'
-		error_handle.errorMessage(12,LineNo);
+		error_handle.errorMessage(12,LineNo, getErrorString(current_token));
 		next();
 	}
 	while (!(args->empty())) {
 		if (!(symbol_set.insert(args->front(), kind, type)))
-			error_handle.errorMessage(43, LineNo);
+			error_handle.errorMessage(43, LineNo,args->front());
 		args->pop();
 	}
 #ifdef DEBUG
@@ -644,7 +652,7 @@ void Parser::funcDec() {
 		if (item == NULL)
 		{
 			//[Error]:redefintion.
-			error_handle.errorMessage(44, LineNo, current_token.getName());
+			error_handle.errorMessage(44, LineNo, getErrorString(current_token));
 			//we should confrim the func is existing.
 			item = symbol_set.search(func_name);
 		}
@@ -680,7 +688,7 @@ void Parser::funcDec() {
 			{
 				type = TokenType::notyp;
 				// notyp not a return type!
-				error_handle.errorMessage(45, LineNo, current_token.getName());
+				error_handle.errorMessage(45, LineNo, getErrorString(current_token));
 			}
 			//set the function's return type.
 			if(item!=NULL)
@@ -690,8 +698,7 @@ void Parser::funcDec() {
 		else
 		{
 			//No.13 There 
-			error_handle.errorMessage(13, LineNo);
-			next();
+			error_handle.errorMessage(13, LineNo,func_name);
 		}
 		expect(Symbol::semicolon, ";");
 	}
@@ -823,8 +830,8 @@ SymbolItem* Parser::factor(){
 		// [ 
 		if (match(Symbol::lsquare))
 		{
-			if (ident->getType() != TokenKind::ARRAY)
-				error_handle.errorMessage(46, LineNo);
+			if (ident->getKind() != TokenKind::ARRAY)
+				error_handle.errorMessage(46, LineNo,ident_name);
 			next();
 			// ±Ì¥Ô Ω
 			SymbolItem* expr = expression();
@@ -875,7 +882,7 @@ SymbolItem* Parser::factor(){
 		return expr;
 	}
 	else {
-		error_handle.errorMessage(19, LineNo, current_token.getName());
+		error_handle.errorMessage(19, LineNo, getErrorString(current_token));
 	}
 #ifdef DEBUG
 	level--;
@@ -908,7 +915,7 @@ void Parser::selector(queue<string>* var_name) {
 		}
 		else {
 			//NOT CORRET TYPE;
-			error_handle.errorMessage(21, LineNo);
+			error_handle.errorMessage(12, LineNo, getErrorString(current_token));
 			temp = TokenType::notyp;
 		}
 		//enter the array_table;
@@ -932,7 +939,7 @@ void Parser::callPro(SymbolItem* proc) {
 	if (proc == NULL)
 		return;
 	else if (proc->getKind() != TokenKind::PROC) {
-		error_handle.errorMessage(57, LineNo);
+		error_handle.errorMessage(57, LineNo,proc->getName());
 		return;
 	}
 	if (match(Symbol::lparen)) {
@@ -992,7 +999,7 @@ SymbolItem* Parser::realParameter(SymbolItem* func) {
 	while (real_iter!=real_parameters.end()) {
 		if (form_iter == form_parameters.end()) {
 			//FormParameters can't match the RealParameters.
-			error_handle.errorMessage(55, LineNo);
+			error_handle.errorMessage(55, LineNo,func->getName());
 			break;
 		}
 		else if (
@@ -1022,7 +1029,7 @@ SymbolItem* Parser::realParameter(SymbolItem* func) {
 			)
 		{
 			//the real parameter's type can't match
-			error_handle.errorMessage(55, LineNo);
+			error_handle.errorMessage(55, LineNo ,func->getName());
 		}
 		real_iter++;
 		form_iter++;
@@ -1030,7 +1037,7 @@ SymbolItem* Parser::realParameter(SymbolItem* func) {
 
 	if (form_iter != form_parameters.end())
 	{
-		error_handle.errorMessage(55, LineNo);
+		error_handle.errorMessage(55, LineNo,func->getName());
 	}
 
 	real_iter = real_parameters.begin();
@@ -1081,12 +1088,12 @@ void Parser::forStatement() {
 	if (match(Symbol::ident)) {
 		string ident_name = current_token.getName();
 		first_ident = get(ident_name);
-		if (first_ident->getKind()!= TokenKind::VAR)
+		if (first_ident !=NULL && first_ident->getKind()!= TokenKind::VAR)
 			error_handle.errorMessage(57, LineNo);
 		next();
 	}
 	else {
-		error_handle.errorMessage(22,LineNo);
+		error_handle.errorMessage(19,LineNo);
 		next();
 	}
 	// :=
@@ -1279,7 +1286,6 @@ void Parser::condition(SymbolItem* else_label,bool _ifsuccess=true) {
 	}
 	else {
 		error_handle.errorMessage(26, LineNo);
-		next();
 	}
 }
 
@@ -1290,7 +1296,8 @@ void Parser::compoundStatement() {
 	level++;
 	PRINT("compound Statement");
 #endif // DEBUG
-	expect(Symbol::beginsym,"begin");
+	skip(statbegsys, 67);
+	expect(Symbol::beginsym, "begin");
 	statement();
 	while (1) {
 		// except ';'
@@ -1335,7 +1342,7 @@ void Parser::assignment(SymbolItem* ident) {
 		src1 = expression();
 		// ]
 		if (dst != NULL && dst->getKind() != TokenKind::ARRAY)
-			error_handle.errorMessage(46, LineNo);
+			error_handle.errorMessage(46, LineNo , dst->getName());
 
 		//There we can give out a error which belong to the type of out of bound.
 		expect(Symbol::rsquare,"]");
@@ -1343,8 +1350,8 @@ void Parser::assignment(SymbolItem* ident) {
 		// dst[src1] := src2;
 		src2 = expression();
 		//the type of the src2 is different from the type of the dst.
-		if (src2->getType() != dst->getType())
-			error_handle.errorMessage(47, LineNo);
+		if (src2!=NULL && dst!=NULL && src2->getType() != dst->getType())
+			error_handle.errorMessage(47, LineNo,src2->getName(),dst->getName());
 		SymbolItem *addr = symbol_set.genTemp(TokenKind::TEMP_ADD, dst->getType());
 		// fill the addr with the base address of array and the offset.
 		// addr = ADDR(dst) + src1;
@@ -1362,15 +1369,18 @@ void Parser::assignment(SymbolItem* ident) {
 			(dst->getKind() == TokenKind::VAR
 			|| dst->getKind() == TokenKind::PARA
 			|| dst->getKind() == TokenKind::PARAVAR)) {
-			if (dst->getType() != src1->getType())
-				error_handle.errorMessage(48, LineNo);
-			middle_code.gen(Opcode::ASS, dst, src1,NULL);
+			if (dst->getType() == src1->getType()
+				||(dst->getType() == TokenType::inttyp
+					&& src1->getType()==TokenType::chartyp))
+				middle_code.gen(Opcode::ASS, dst, src1,NULL);
+			else
+				error_handle.errorMessage(47, LineNo,src1->getName(),dst->getName());
 		}
 		// (a func)dst := src1;
 		else if (dst != NULL && (dst->getKind() == TokenKind::FUNC)) {
 			if (!symbol_set.findProc(dst->getName())) {
 				// no func!
-				error_handle.errorMessage(52, LineNo);
+				error_handle.errorMessage(40, LineNo,dst->getName());
 			}
 			else {
 				if (dst->getType() != src1->getType())
@@ -1393,6 +1403,7 @@ SymbolItem* Parser::item() {
 	PRINT("item");
 #endif // DEBUG
 	//the first factor.
+	skip(facbegsys, 63);
 	SymbolItem * first_factor = factor();
 	SymbolItem * temp = NULL;
 	
@@ -1405,6 +1416,7 @@ SymbolItem* Parser::item() {
 		else
 			op = Opcode::DIV;
 		next();
+		skip(facbegsys, 63);
 		SymbolItem *second_factor = factor();
 		//there should be a temp varaiable.
 		temp = symbol_set.genTemp(TokenKind::TEMP, first_factor->getType());
@@ -1472,9 +1484,6 @@ void Parser::writeStatement() {
 
 	if (match(Symbol::writesym)) {
 		next();
-	}
-	else {
-		error_handle.errorMessage(31,LineNo);
 	}
 	expect(Symbol::lparen,"(");
 	// "

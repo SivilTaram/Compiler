@@ -38,6 +38,8 @@ public:
 	//test whether the current_token is valid.
 	void test(symset s1, symset s2, int error_code);
 
+	string getErrorString(Token token);
+
 	void block(symset blockbegin);
 	//Handle const declaration
 	void constDec();

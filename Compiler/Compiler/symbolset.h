@@ -21,7 +21,8 @@ enum TokenKind {
 	LABEL,// we should use it in three address code.
 	TEMP, // Temporary varibale.
 	TEMP_ADD,// Temporary variable address(in array).
-	TEMP_CON// immediate number. Temporary constant.
+	TEMP_CON,// immediate number. Temporary constant.
+	UNDEFINE
 };
 
 enum TokenType {

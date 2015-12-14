@@ -14,6 +14,7 @@ public:
 	void print();
 	void errorMessage(int errortype, int line); 
 	void errorMessage(int errortype, int line, string message1);
+	void errorMessage(int errortype, int line, string message1, string message2);
 private:
 	bool is_success;
 	int error_count;

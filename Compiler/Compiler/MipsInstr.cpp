@@ -505,7 +505,7 @@ void MipsInstr::translate() {
 		Handle(single_middle);
 		iter++;
 	}
-	ofstream fout("output/output_binary.txt");
+	ofstream fout("F:/output/output_binary.txt");
 	fout << ".data" << endl;
 	for (int i = 0; i < object_datas.size(); i++) {
 		fout << object_datas[i].setData() << endl;

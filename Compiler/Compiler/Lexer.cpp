@@ -77,9 +77,14 @@ void Lexer::getch() {
 		}
 		infile.getline(buf, 1024);
 		ll = strlen(buf);
-		cc = 0;
-		linenum++;
+		cc = 0;		
 		peek = ' ';
+	}
+	else if (cc == 0)
+	{
+		linenum++;
+		cc++;
+		peek = buf[cc - 1];
 	}
 	else {
 		cc++;
