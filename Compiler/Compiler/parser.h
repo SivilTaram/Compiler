@@ -35,6 +35,7 @@ public:
 	SymbolItem* get(string _ident_name);
 	//skip some words until a valid follow set.
 	void skip(symset fsys, int error_code);
+	void skip(symset fsys);
 	//test whether the current_token is valid.
 	void test(symset s1, symset s2, int error_code);
 

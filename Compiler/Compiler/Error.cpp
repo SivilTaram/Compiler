@@ -31,12 +31,12 @@ void Error::errorMessage(int errortype,int line) {
 	case 42: Message << "把 = 当 := 使用" << endl; break;
 	case 60: Message << "分程序没有正常结束" << endl; break;
 	case 61: Message << "常量定义格式不正确" << endl; break;
-	case 62: Message << "block语句块前有不正确的字符串" << endl; break;
-	case 63: Message << "factor语句块前有语义不正确的字符串" << endl; break;
-	case 64: Message << "const语句块前有语义不正确的字符串" << endl; break;
-	case 65: Message << "var语句块前有语义不正确的字符串" << endl; break;
-	case 66: Message << "基本类型前有语义不正确的字符串" << endl; break;
-	case 67: Message << "语句块前有语义不正确的字符串" << endl; break;
+	case 62: Message << "开头出现异常字符串" << endl; break;
+	//case 63: Message << "factor语句块前有语义不正确的字符串" << endl; break;
+	//case 64: Message << "const语句块前有语义不正确的字符串" << endl; break;
+	//case 65: Message << "var语句块前有语义不正确的字符串" << endl; break;
+	//case 66: Message << "基本类型前有语义不正确的字符串" << endl; break;
+	//case 67: Message << "语句块前有语义不正确的字符串" << endl; break;
 	default:
 		break;
 	}
@@ -51,6 +51,7 @@ void Error::errorMessage(int errortype, int line,string message1) {
 	switch (errortype)
 	{
 		//the function have defined before.
+	case 10: Message << message1 << "不是一个合法的函数声明！" << endl; break;
 	case 11: Message << message1 << "不是一个合法的过程声明！" << endl; break;
 	case 12: Message << message1 << "不是一个合法的基本类型！" << endl; break;
 	case 13: Message << "在函数" << message1 << "声明后缺少分号！" << endl; break;
@@ -67,6 +68,7 @@ void Error::errorMessage(int errortype, int line,string message1) {
 	case 55: Message << message1 << "形参与实参个数不匹配！" << endl; break;
 	case 56: Message << message1 << "形参与实参的类型不匹配！" << endl; break;
 	case 57: Message << message1 << "不是过程！" << endl; break;
+	case 58: Message << message1 << "下标不正确！" << endl; break;
 	default:
 		break;
 	}

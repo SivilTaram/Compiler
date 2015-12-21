@@ -3,11 +3,15 @@
 
 
  int main() {
-	
-	Parser* parser_var = new Parser("test/for.txt");
+	//string input_file;
+	//cout << "请输入要读取的文件路径" << endl;
+	//cin >> input_file;
+	//Parser* parser_var = new Parser(input_file);
+
+
+	Parser* parser_var = new Parser("test/temp.txt");
 	parser_var->parser();
 	parser_var->translate();
-	//Parser* parser_const = new Parser("test/const.txt");
 	//parser_const->parser();
 	//Parser* parser_compound = new Parser("test/compoundstate.txt");
 	//parser_compound->parser();

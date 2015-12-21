@@ -224,6 +224,16 @@ void Parser::skip(symset fsys,int error_code) {
 		next();
 	}
 };
+
+void Parser::skip(symset fsys) {
+	//read while the next() into.
+	if (fsys.find(current_token.getType()) != fsys.end())
+		return;
+	while (fsys.find(current_token.getType()) == fsys.end())
+	{
+		next();
+	}
+};
 //test whether the current_token is valid.
 void Parser::test(symset s1,symset s2,int error_code) {
 	//not found
@@ -250,6 +260,7 @@ void Parser::translate() {
 Start parse.
 */void Parser::parser() {
 	next();
+	skip(blockbegsys, 62);
 	block(blockbegsys);
 	if (!match(Symbol::period))
 		//Number50: the program ended not normally
@@ -279,7 +290,6 @@ void Parser::block(symset _block) {
 	PRINT("block");
 #endif // DEBUG
 	try {
-		skip(blockbegsys, 62);
 		if (match(Symbol::constsym)) {
 			next();
 			constDec();
@@ -303,14 +313,16 @@ void Parser::block(symset _block) {
 				//we must also read the first word for more accurate error message.
 				next();
 				//the loop is outside,and procDec can't have a loop
-				procDec();
+				procDec(); 
+				skip(blockbegsys);
 				block(blockbegsys);
 				symbol_set.goback();
 				expect(Symbol::semicolon, ";");
 			}
 			else {
 				next();
-				funcDec();
+				funcDec(); 
+				skip(blockbegsys);
 				block(blockbegsys);
 				//SymbolTable go back.
 				symbol_set.goback();
@@ -383,7 +395,7 @@ void Parser::constDef() {
 				error_handle.errorMessage(42, LineNo);
 			next();
 			bool minus = false;
-			skip(constbegsys, 61);
+			skip(constbegsys);
 			if (match(Symbol::plus) || match(Symbol::minus)) {
 				if (match(Symbol::minus))
 					minus = true;
@@ -432,7 +444,7 @@ void Parser::variableDec() {
 	while (1) {
 		if (!match(Symbol::ident))
 			error_handle.errorMessage(19, LineNo, getErrorString(current_token));
-		skip({ Symbol::ident }, 65);
+		skip({ Symbol::ident });
 		variableDef();
 		expect(Symbol::semicolon, ";");
 		//identifier or others.
@@ -471,7 +483,7 @@ void Parser::variableDef() {
 	}
 	if (match(Symbol::colon)) {
 		next();
-		skip(typebegsys, 66);
+		skip(typebegsys);
 		varType(var_name);
 	}
 #ifdef DEBUG
@@ -536,11 +548,12 @@ void Parser::procDec() {
 	if (match(Symbol::ident))
 	{
 		SymbolSet* current_table = symbol_set.getCurrentSet();
+		string proc_real_name = current_token.getName();
 		string proc_name = current_table->getProcName() + current_token.getName()+"_";
 		SymbolItem* proc = symbol_set.insert(proc_name, TokenKind::PROC, TokenType::voidtyp);
 		if (proc == NULL)
 			//the procedure is built.
-			error_handle.errorMessage(41,LineNo,proc_name);
+			error_handle.errorMessage(41,LineNo,proc_real_name);
 		next();
 		// if parameter table's first is '(',then loop
 		// to map the parameter list.
@@ -647,13 +660,14 @@ void Parser::funcDec() {
 		PRINT("function Declaration "+ current_token.getName());
 #endif // DEBUG
 		SymbolSet* current_table = symbol_set.getCurrentSet();
+		string func_real_name = current_token.getName();
 		string func_name = current_table->getProcName() + current_token.getName() + "_";
 		//void is the temporatory return type!!!
 		SymbolItem* item = symbol_set.insert(func_name, TokenKind::FUNC, TokenType::voidtyp);
 		if (item == NULL)
 		{
 			//[Error]:redefintion.
-			error_handle.errorMessage(44, LineNo, getErrorString(current_token));
+			error_handle.errorMessage(44, LineNo, func_real_name);
 			//we should confrim the func is existing.
 			item = symbol_set.search(func_name);
 		}
@@ -699,13 +713,13 @@ void Parser::funcDec() {
 		else
 		{
 			//No.13 There 
-			error_handle.errorMessage(13, LineNo,func_name);
+			error_handle.errorMessage(13, LineNo,func_real_name);
 		}
 		expect(Symbol::semicolon, ";");
 	}
 	else {
 		//No.11 should define identity at the first of proc.After procedure.
-		error_handle.errorMessage(11, LineNo);
+		error_handle.errorMessage(11, LineNo,getErrorString(current_token));
 		//skip();
 	}
 #ifdef DEBUG
@@ -943,7 +957,7 @@ void Parser::callPro(SymbolItem* proc,string proc_name) {
 	if (proc == NULL)
 		return;
 	else if (proc->getKind() != TokenKind::PROC) {
-		error_handle.errorMessage(57, LineNo,proc->getName());
+		error_handle.errorMessage(57, LineNo,proc_name);
 		return;
 	}
 	if (match(Symbol::lparen)) {
@@ -987,6 +1001,30 @@ SymbolItem* Parser::realParameter(SymbolItem* func,string func_name) {
 		next();
 		while (1) {
 			//add the args to the realparameters.
+			if (match(Symbol::ident))
+			{
+				SymbolItem* item = get(current_token.getName());
+				if (item != NULL && item->getKind() == TokenKind::ARRAY)
+				{
+					next();
+					expect(Symbol::lsquare,"]");
+					SymbolItem* expr = expression();
+					if (expr == NULL)
+						error_handle.errorMessage(58, LineNo, item->getName());
+					// ]
+					expect(Symbol::rsquare,"[");
+					SymbolItem* temp = symbol_set.genTemp(TokenKind::TEMP_ADD, item->getType());
+					//////////////////////////////////////
+					// should a gen to store the address of array.
+					/////////////////////////////////////
+					middle_code.gen(Opcode::ARRADD, temp, item,expr);
+					real_parameters.push_back(temp);
+					if (!match(Symbol::comma))
+						break;
+					next();
+					continue;
+				}
+			}
 			real_parameters.push_back(expression());
 			if (!match(Symbol::comma))
 				break;
@@ -1014,7 +1052,8 @@ SymbolItem* Parser::realParameter(SymbolItem* func,string func_name) {
 				(
 					   (*real_iter)->getKind() != TokenKind::VAR
 					&& (*real_iter)->getKind() != TokenKind::PARA
-					&& (*real_iter)->getKind() != TokenKind::PARAVAR)
+					&& (*real_iter)->getKind() != TokenKind::PARAVAR
+					&& (*real_iter)->getKind() != TokenKind::TEMP_ADD)
 				)
 			||
 			(
@@ -1048,7 +1087,8 @@ SymbolItem* Parser::realParameter(SymbolItem* func,string func_name) {
 	form_iter = form_parameters.begin();
 	while (real_iter != real_parameters.end()) {
 		if (form_iter != form_parameters.end()) {
-			if ((*form_iter)->getKind() == TokenKind::PARAVAR)
+			if ((*form_iter)->getKind() == TokenKind::PARAVAR
+				&& (*real_iter)->getKind() != TokenKind::TEMP_ADD)
 				middle_code.gen(Opcode::PUSHVAR, (*real_iter),NULL,NULL);
 			else
 				middle_code.gen(Opcode::PUSH, (*real_iter),NULL,NULL);
@@ -1104,7 +1144,8 @@ void Parser::forStatement() {
 	expect(Symbol::becomes,":=");
 	SymbolItem* initial_value = expression();
 	// first_ident = initial_value;
-	middle_code.gen(Opcode::ASS, first_ident, initial_value,NULL);
+	SymbolItem* temp_init = symbol_set.genTemp(first_ident->getKind(), first_ident->getType());
+	middle_code.gen(Opcode::ASS, temp_init, initial_value,NULL);
 
 	bool downto = false;
 
@@ -1117,21 +1158,37 @@ void Parser::forStatement() {
 		next();
 	}
 
+	/*
+			expr = expression();
+			init temp;(ASS)
+			last_expr = expression();
+			BLS/BGR temp,last_expr,endloop;
+			init;(ASS)
+	loop:	(SETL)
+			statement;
+			decrement/incerement;(DEC/INC)
+			BLE/BGE loop;
+	endloop:(SETL)
+	xxxx
+
+	*/
 	SymbolItem* loop_label = symbol_set.genLabel();
-	SymbolItem* state_label = symbol_set.genLabel();
 	SymbolItem* end_loop_label = symbol_set.genLabel();
-	//JUMP like the BR in P-code
-	middle_code.gen(Opcode::SETL, loop_label,NULL,NULL);
 
 	//expression
 	SymbolItem* last_value = expression();
 
-	middle_code.gen(Opcode::JUMP, end_loop_label, NULL, NULL);
+	//down to means if the temp < last then do exit
+	if (downto == true)
+		middle_code.gen(Opcode::BLS, end_loop_label, temp_init, last_value);
+	else
+		middle_code.gen(Opcode::BGR, end_loop_label, temp_init, last_value);
+
+	middle_code.gen(Opcode::ASS, first_ident, initial_value , NULL);
+
+	middle_code.gen(Opcode::SETL, loop_label, NULL, NULL);
 
 	expect(Symbol::dosym,"do");
-
-	//set the label of statement.
-	middle_code.gen(Opcode::SETL, state_label, NULL, NULL);
 
 	// statement
 	statement();
@@ -1141,27 +1198,24 @@ void Parser::forStatement() {
 	else if (downto == false && first_ident != NULL)
 		middle_code.gen(Opcode::INC, first_ident,NULL,NULL);
 
-	middle_code.gen(Opcode::JUMP, loop_label, NULL, NULL);
+	if (downto == true)
+		middle_code.gen(Opcode::BGE, loop_label, first_ident, last_value);
+	else
+		middle_code.gen(Opcode::BLE, loop_label, first_ident, last_value);
 
 	middle_code.gen(Opcode::SETL, end_loop_label, NULL, NULL);
 
-	if (downto == true)
-		middle_code.gen(Opcode::BGE, state_label, first_ident, last_value);
-	else
-		middle_code.gen(Opcode::BLE, state_label, first_ident, last_value);
-
-
 	/*
+		expr = expression();		
+		init temp;(ASS)
+		BLE temp,expr,endloop;
 		init;(ASS)
 loop:	(SETL)
-		expression();
-		J end_loop_label;(J)
-state:  (SETL)
 		statement;
 		decrement/incerement;(DEC/INC)
-		j loop_label;(J)
+		BLE/BGE loop;
 endloop:(SETL)
-		BLE state_label;(BLE)
+		xxxx
 
 	
 	*/
@@ -1300,7 +1354,7 @@ void Parser::compoundStatement() {
 	level++;
 	PRINT("compound Statement");
 #endif // DEBUG
-	skip(statbegsys, 67);
+	skip(statbegsys);
 	expect(Symbol::beginsym, "begin");
 	statement();
 	while (1) {
@@ -1408,7 +1462,7 @@ SymbolItem* Parser::item() {
 	PRINT("item");
 #endif // DEBUG
 	//the first factor.
-	skip(facbegsys, 63);
+	skip(facbegsys);
 	SymbolItem * first_factor = factor();
 	SymbolItem * temp = NULL;
 	
@@ -1421,7 +1475,7 @@ SymbolItem* Parser::item() {
 		else
 			op = Opcode::DIV;
 		next();
-		skip(facbegsys, 63);
+		skip(facbegsys);
 		SymbolItem *second_factor = factor();
 		//there should be a temp varaiable.
 		temp = symbol_set.genTemp(TokenKind::TEMP, first_factor->getType());
