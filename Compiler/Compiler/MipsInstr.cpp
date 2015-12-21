@@ -14,7 +14,7 @@ const string $t0 = "$t0";
 const string $t1 = "$t1";
 const string $t2 = "$t2";
 const string $a0 = "$a0";
-const string $0 = "$0";
+const string $0  = "$0";
 const string $t7 = "$t7";
 
 string tostring(int _value) {
@@ -260,9 +260,6 @@ void MipsInstr::HandleCall(SymbolItem* _caller,SymbolItem* _callee) {
 	abp(n-1)...
 	abp(0)	----------- $sp
 	*/
-#ifdef DEBUG
-	cout << "debug call" << endl;
-#endif // DEBUG
 
 	add(MipsCode::note, "call");
 	SymbolSet* caller_table = (SymbolSet*)_caller;
@@ -505,7 +502,10 @@ void MipsInstr::translate() {
 		Handle(single_middle);
 		iter++;
 	}
-	ofstream fout("F:/output/output_binary.txt");
+	string output_file;
+	cout << "请输入要输出的文件路径" << endl;
+	cin >> output_file;
+	ofstream fout(output_file);
 	fout << ".data" << endl;
 	for (int i = 0; i < object_datas.size(); i++) {
 		fout << object_datas[i].setData() << endl;

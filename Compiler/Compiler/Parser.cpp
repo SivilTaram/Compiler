@@ -733,7 +733,8 @@ void Parser::statement() {
 			assignment(ident_item);
 		}
 		else {
-			callPro(ident_item);
+			if(ident_item!=NULL && ident_item->getKind()==TokenKind::PROC)
+				callPro(ident_item,ident_name);
 		}
 	}
 	else if (match(Symbol::beginsym))
@@ -856,11 +857,13 @@ SymbolItem* Parser::factor(){
 		else if (match(Symbol::lparen))
 		{
 			//callFunc and generate the function code.
-			SymbolItem* func = callFunc(ident);
+			SymbolItem* func = NULL;
+			if(ident!=NULL && ident->getKind()== TokenKind::FUNC)
+				func = callFunc(ident,ident_name);
 			return func;
 		}
 		else if (ident!=NULL && ident->getKind() == TokenKind::FUNC) {
-			callFunc(ident);
+			callFunc(ident,ident_name);
 			return ident;
 		}
 		else {
@@ -936,7 +939,7 @@ void Parser::selector(queue<string>* var_name) {
 
 //Handle the call of procedure and function
 //<过程调用语句>  :: = <标识符>[<实在参数表>]
-void Parser::callPro(SymbolItem* proc) {
+void Parser::callPro(SymbolItem* proc,string proc_name) {
 	if (proc == NULL)
 		return;
 	else if (proc->getKind() != TokenKind::PROC) {
@@ -944,7 +947,7 @@ void Parser::callPro(SymbolItem* proc) {
 		return;
 	}
 	if (match(Symbol::lparen)) {
-		realParameter(proc);
+		realParameter(proc,proc_name);
 	}
 	else {
 		SymbolSet* callee_func = symbol_set.serachTable(proc->getName());
@@ -954,11 +957,11 @@ void Parser::callPro(SymbolItem* proc) {
 }
 
 //<函数调用语句>  :: = <标识符>[<实在参数表>]
-SymbolItem* Parser::callFunc(SymbolItem* func) {
+SymbolItem* Parser::callFunc(SymbolItem* func,string func_name) {
 	if (func == NULL)
 		return symbol_set.genTemp(TokenKind::TEMP, TokenType::notyp);
 	if (match(Symbol::lparen)) {
-		SymbolItem* return_value = realParameter(func);
+		SymbolItem* return_value = realParameter(func,func_name);
 		//let the return_value to store the value of func.
 		middle_code.gen(Opcode::ASS,return_value, func,NULL);
 		return return_value;
@@ -973,7 +976,7 @@ SymbolItem* Parser::callFunc(SymbolItem* func) {
 
 //<实在参数表>    :: = '(' <实在参数> {, <实在参数>}')'
 //<实在参数>      :: = <表达式>
-SymbolItem* Parser::realParameter(SymbolItem* func) {
+SymbolItem* Parser::realParameter(SymbolItem* func,string func_name) {
 #ifdef DEBUG
 	level++;
 	PRINT("real Parameter");
@@ -1000,7 +1003,7 @@ SymbolItem* Parser::realParameter(SymbolItem* func) {
 	while (real_iter!=real_parameters.end()) {
 		if (form_iter == form_parameters.end()) {
 			//FormParameters can't match the RealParameters.
-			error_handle.errorMessage(55, LineNo,func->getName());
+			error_handle.errorMessage(55, LineNo,func_name);
 			break;
 		}
 		else if (
@@ -1030,7 +1033,7 @@ SymbolItem* Parser::realParameter(SymbolItem* func) {
 			)
 		{
 			//the real parameter's type can't match
-			error_handle.errorMessage(55, LineNo ,func->getName());
+			error_handle.errorMessage(56, LineNo ,func_name);
 		}
 		real_iter++;
 		form_iter++;
@@ -1038,7 +1041,7 @@ SymbolItem* Parser::realParameter(SymbolItem* func) {
 
 	if (form_iter != form_parameters.end())
 	{
-		error_handle.errorMessage(55, LineNo,func->getName());
+		error_handle.errorMessage(55, LineNo,func_name);
 	}
 
 	real_iter = real_parameters.begin();
@@ -1337,6 +1340,7 @@ void Parser::assignment(SymbolItem* ident) {
 	SymbolItem* src2 = NULL;
 
 	//must be ":=" or "[" 
+	// ident[
 	if (match(Symbol::lsquare)) {
 		next();
 		//the index of the array.
@@ -1360,7 +1364,7 @@ void Parser::assignment(SymbolItem* ident) {
 		// [addr] = src2;
 		middle_code.gen(Opcode::ASSADD, addr, src2,NULL);
 	}
-	// :=
+	// ident :=
 	else {
 		expect(Symbol::becomes,":=");
 		// dst := src1;

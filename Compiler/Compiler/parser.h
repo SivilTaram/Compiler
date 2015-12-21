@@ -76,11 +76,11 @@ public:
 	//Handle the assign
 	void assignment(SymbolItem* ident);
 	//Item
-	void callPro(SymbolItem* proc);
+	void callPro(SymbolItem* proc,string proc_name);
 
 	//the func should have a return value.
-	SymbolItem* callFunc(SymbolItem* func);
-	SymbolItem* realParameter(SymbolItem* func);
+	SymbolItem* callFunc(SymbolItem* func,string func_name);
+	SymbolItem* realParameter(SymbolItem* func,string func_name);
 
 	/* They should have return value.*/
 	//Item
