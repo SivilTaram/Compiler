@@ -56,8 +56,10 @@ void Error::errorMessage(int errortype, int line,string message1) {
 	case 12: Message << message1 << "不是一个合法的基本类型！" << endl; break;
 	case 13: Message << "在函数" << message1 << "声明后缺少分号！" << endl; break;
 	case 16: Message << message1 << "不是一个合法的常量类型！" << endl; break;
-	case 9: Message << "缺少字符" << message1 << endl; break;
+	case 9: Message << "本应该是字符" << message1 << endl; break;
 	case 19: Message << message1 << "不应该在此处出现！" << endl; break;
+	case 20: Message << "不能在非" << message1 << "函数体内为函数指定返回值！" << endl; break;
+	case 39: Message << message1 << "过程/函数是无参数的，定义时不该带()" << endl; break;
 	case 40: Message << "标识符" << message1 << "未定义！" << endl; break;
 	case 41: Message << "过程" << message1 << "已经定义过了!" << endl; break;
 	case 42: Message << "常量" << message1 << "已经定义过了!" << endl; break;
@@ -65,7 +67,7 @@ void Error::errorMessage(int errortype, int line,string message1) {
 	case 44: Message << "函数" << message1 << "已经定义过了！" << endl; break;
 	case 45: Message << "函数的返回类型" << message1 << "不是基本类型！" << endl; break;
 	case 46: Message << message1 << "不是数组！" << endl; break;
-	case 47: Message << message1 << "函数调用出错！" << endl; break;
+	case 47: Message << message1 << "过程/函数 是无参数的，调用时不应该使用()!" << endl; break;
 	case 55: Message << message1 << "形参与实参个数不匹配！" << endl; break;
 	case 56: Message << message1 << "形参与实参的类型不匹配！" << endl; break;
 	case 57: Message << message1 << "不是过程！" << endl; break;
@@ -85,8 +87,8 @@ void Error::errorMessage(int errortype, int line, string message1, string messag
 	switch (errortype)
 	{
 		//the function have defined before.
-	case 47: Message << message1 << "与" << message2 << "类型不匹配，不可以直接赋值！" << endl; break;
-
+	case 47: Message << message1 << "是 int,不能直接赋值给 char 变量" << message2 << "！" << endl; break;
+	case 48: Message << message1 << "与" << message2 << "类型不是int 或 char，不能参与运算！" << endl; break;
 	default:
 		break;
 	}

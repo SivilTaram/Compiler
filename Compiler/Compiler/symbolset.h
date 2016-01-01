@@ -4,11 +4,14 @@
 #include <ctype.h>
 #include "token.h"
 #include <assert.h>
-#include <array>     
+#include <array>
+#include <sstream>
 
 #define MAX_LEVEL (3+1)
 
 using namespace std;
+
+
 
 enum TokenKind {
 	CONST,// .data
@@ -47,16 +50,32 @@ private:
 	string conststring;
 public:
 	// get methods.
-	SymbolItem(string _name, TokenKind _kind, TokenType _type, int _value=0) {
+	SymbolItem(string _name, TokenKind _kind, TokenType _type,int _value = 0,string _tag_string ="") {
 		name = _name;
 		kind = _kind;
 		type = _type;
 		value = _value;
 		size = 1;
+		offset = 0;
+		conststring = _tag_string;
 		//the char here will be regarded as the int.
 		//This may be changed.
 	}
-	string getName() { return name; }
+	string getName() {
+		stringstream ss;
+		if (kind == TokenKind::TEMP_CON)
+		{
+			if (type == TokenType::chartyp)
+				//		return tostring((char)value);
+				ss << (char)value;
+			else if (type == TokenType::inttyp)
+				//		return tostring(value);
+				ss << value;
+			return ss.str();
+		}
+		else
+			return name;
+	}
 	TokenKind getKind() { return kind; }
  	TokenType getType() { return type; }
 	int getValue() { return value; }

@@ -8,7 +8,7 @@ public:
 
 	SymbolItem* search(string _name); 
 	SymbolItem* insert(string _name, TokenKind _kind, TokenType _type,int _value=0);
-	SymbolItem* genTemp(TokenKind _kind,TokenType _type);
+	SymbolItem* genTemp(TokenKind _kind,TokenType _type,string _tag_string="");
 	SymbolItem* genLabel();
 	vector<SymbolItem*> getArgList(string _name);
 	void printSymbolSet();
@@ -18,7 +18,7 @@ public:
 	SymbolSet* serachTable(string _name);
 	bool RootSymbolSet::goback();
 
-	bool findProc(string _name);
+	//bool findProc(string _name);
 	void calcOffset();
 	string getCurrentName();
 	

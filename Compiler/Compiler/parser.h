@@ -75,7 +75,7 @@ public:
 	//Handle compound statement
 	void compoundStatement();
 	//Handle the assign
-	void assignment(SymbolItem* ident);
+	void assignment(SymbolItem* ident,string func_name = "");
 	//Item
 	void callPro(SymbolItem* proc,string proc_name);
 

@@ -49,7 +49,10 @@ const symset statbegsys = {
 	Symbol::forsym,
 	Symbol::ident
 };
-
+const symset parameterlistbegsys = {
+	Symbol::varsym,
+	Symbol::ident
+};
 //except is suitable for one expression
 //or something shorter.
 void Parser::expect(Symbol sym,string meesage) {
@@ -561,16 +564,19 @@ void Parser::procDec() {
 		{
 			//read one again;
 			next();
-			while (1) {
-				parameterList();
-				if (match(Symbol::rparen))
-				{
-					next();
-					break;
-				}
-				// ';' and read next
-				expect(Symbol::semicolon, ";");
+			if (match(Symbol::rparen))
+			{
+				error_handle.errorMessage(39, LineNo, proc_real_name);
 			}
+			while (1) {
+				skip(parameterlistbegsys);
+				parameterList();
+				if (!match(Symbol::semicolon))
+					break;
+				// ';' and read next
+				next();
+			}
+			expect(Symbol::rparen, ")");
 		}
 		//except a ';'
 		expect(Symbol::semicolon, ";");
@@ -605,13 +611,11 @@ void Parser::parameterList() {
 			args->push(current_token.getName());
 			next();
 		}
-		if (match(Symbol::colon))
-		{
-			next();
+		if (!match(Symbol::comma))
 			break;
-		}
-		expect(Symbol::comma,",");
+		next();
 	}
+	expect(Symbol::colon, ";");
 	//basic type.
 	//kind means var para or normal para.
 	basicType(args,kind);
@@ -652,6 +656,8 @@ void Parser::basicType(queue<string> *args,TokenKind kind) {
 
 //Handle funcDec
 //<函数首部> ::= function <标识符>[<形式参数表>]: <基本类型>;
+//<形式参数表>    :: = '('<形式参数段>{; <形式参数段>}')'
+
 void Parser::funcDec() {
 	if (match(Symbol::ident))
 	{
@@ -669,7 +675,8 @@ void Parser::funcDec() {
 			//[Error]:redefintion.
 			error_handle.errorMessage(44, LineNo, func_real_name);
 			//we should confrim the func is existing.
-			item = symbol_set.search(func_name);
+			// strange behavior?????
+			//item = symbol_set.search(func_name);
 		}
 		next();
 		// if parameter table's first is '(',then loop
@@ -678,16 +685,18 @@ void Parser::funcDec() {
 		{
 			//read one again;
 			next();
+			if (match(Symbol::rparen))
+			{
+				error_handle.errorMessage(39, LineNo, func_real_name);
+			}
 			while (1) {
 				parameterList();
-				if (match(Symbol::rparen))
-				{
-					next();
+				if (!match(Symbol::semicolon))
 					break;
-				}
+				next();
 				// ';' and read next
-				expect(Symbol::semicolon, ";");
 			}
+			expect(Symbol::rparen, ")");
 		}
 		//the begin of the basic type.
 		//except : then basictype and then ;
@@ -744,7 +753,10 @@ void Parser::statement() {
 		//<过程调用语句>  ::=  <标识符>[<实在参数表>]
 		if(match(Symbol::becomes) || match(Symbol::lsquare))
 		{
-			assignment(ident_item);
+			if (ident_item->getKind() == TokenKind::FUNC)
+				assignment(ident_item, ident_name);
+			else
+				assignment(ident_item);
 		}
 		else {
 			if(ident_item!=NULL && ident_item->getKind()==TokenKind::PROC)
@@ -801,10 +813,17 @@ SymbolItem* Parser::expression() {
 	SymbolItem* first_item = item();
 	SymbolItem* temp = NULL;
 
-	if (minus) {
-		temp = symbol_set.genTemp(TokenKind::TEMP, first_item->getType());
-		// temp = - first_item;
-		middle_code.gen(Opcode::NEG, temp, first_item, NULL);
+	if (first_item!=NULL && minus) {
+		// the constant folding
+		temp = symbol_set.genTemp(TokenKind::TEMP, first_item->getType(),"-"+first_item->getString());
+		if (first_item->getKind() == TokenKind::TEMP_CON || first_item->getKind()==TokenKind::CONST)
+		{
+			temp->setValue(-first_item->getValue());
+		}
+		else {
+			// temp = - first_item;
+			middle_code.gen(Opcode::NEG, temp, first_item, NULL);
+		}
 		first_item = temp;
 	}
 
@@ -813,10 +832,41 @@ SymbolItem* Parser::expression() {
 		next();
 		//the second item to calc
 		SymbolItem* second_item = item();
-		temp = symbol_set.genTemp(TokenKind::TEMP, first_item->getType());
-		if (first_item->getType() != second_item->getType())
-			temp->setType(TokenType::inttyp);
-		middle_code.gen(op, temp, first_item, second_item);
+		if (op == Opcode::ADD)
+			temp = symbol_set.genTemp(TokenKind::TEMP, first_item->getType(), first_item->getString() + "+" + second_item->getString());
+		else
+			temp = symbol_set.genTemp(TokenKind::TEMP, first_item->getType(), first_item->getString() + "-" + second_item->getString());
+		if (
+			(first_item->getKind() == TokenKind::TEMP_CON
+				|| first_item->getKind() == TokenKind::CONST)
+			&&
+			(second_item->getKind() == TokenKind::TEMP_CON
+				|| second_item->getKind() == TokenKind::CONST)
+			)
+		{
+			temp->setKind(TokenKind::TEMP_CON);
+			if (op == Opcode::ADD)
+				temp->setValue(first_item->getValue() + second_item->getValue());
+			else
+				temp->setValue(first_item->getValue() - second_item->getValue());
+		}
+		else {
+			if (
+				first_item->getType() != second_item->getType()
+				||
+				(first_item->getType() == TokenType::inttyp
+					&& second_item->getType() == TokenType::inttyp)
+				||
+				(first_item->getType() == TokenType::chartyp
+					&& second_item->getType() == TokenType::chartyp)
+				)
+			{
+				temp->setType(TokenType::inttyp);
+				middle_code.gen(op, temp, first_item, second_item);
+			}
+			else
+				error_handle.errorMessage(48, LineNo, first_item->getName(), second_item->getName());
+		}
 		//for itearting.
 		first_item = temp;
 	}
@@ -1389,7 +1439,7 @@ void Parser::compoundStatement() {
 
 //Handle the assign
 //<赋值语句>      ::=  <标识符> := <表达式>| <函数标识符> := <表达式> | <标识符>'['<表达式>']':= <表达式>
-void Parser::assignment(SymbolItem* ident) {
+void Parser::assignment(SymbolItem* ident,string func_real_name) {
 #ifdef DEBUG
 	level++;
 	PRINT("assignment");
@@ -1415,8 +1465,13 @@ void Parser::assignment(SymbolItem* ident) {
 		// dst[src1] := src2;
 		src2 = expression();
 		//the type of the src2 is different from the type of the dst.
-		if (src2!=NULL && dst!=NULL && src2->getType() != dst->getType())
-			error_handle.errorMessage(47, LineNo,src2->getName(),dst->getName());
+		if (src2!=NULL && dst!=NULL 
+			&&
+			(src2->getType() == TokenType::chartyp && dst->getType() == TokenType::inttyp)
+			)
+		{
+			error_handle.errorMessage(47, LineNo, src2->getName(), dst->getName());
+		}
 		SymbolItem *addr = symbol_set.genTemp(TokenKind::TEMP_ADD, dst->getType());
 		// fill the addr with the base address of array and the offset.
 		// addr = ADDR(dst) + src1;
@@ -1443,16 +1498,19 @@ void Parser::assignment(SymbolItem* ident) {
 		}
 		// (a func)dst := src1;
 		else if (dst != NULL && (dst->getKind() == TokenKind::FUNC)) {
-			if (!symbol_set.findProc(dst->getName())) {
+			SymbolItem* temp = symbol_set.getCurrentSet()->getProcItem();
+			if (temp->getName() != dst->getName()) {
+				error_handle.errorMessage(20, LineNo, func_real_name);
+			}
+			if (!symbol_set.search(dst->getName())) {
 				// no func!
-				error_handle.errorMessage(40, LineNo,dst->getName());
+				error_handle.errorMessage(40, LineNo,func_real_name);
 			}
 			else {
 				if (dst->getType() != src1->getType())
 					error_handle.errorMessage(47, LineNo);
 				middle_code.gen(Opcode::ASS, dst, src1,NULL);
 			}
-
 		}
 	}
 #ifdef DEBUG
@@ -1488,7 +1546,32 @@ SymbolItem* Parser::item() {
 		//there should be a resulttype.
 		//for example,should a char to int or others.
 		//But I don't have time to do this now
-		middle_code.gen(op, temp, first_factor, second_factor);
+		if ((first_factor->getKind() == TokenKind::CONST
+			|| first_factor->getKind() == TokenKind::TEMP_CON) &&
+			(second_factor->getKind() == TokenKind::CONST
+			|| second_factor->getKind() == TokenKind::TEMP_CON)
+			)
+		{
+			//let temp be the const.
+			temp->setKind(TokenKind::TEMP_CON);
+			if (op == Opcode::MUL)
+				temp->setValue(first_factor->getValue() * second_factor->getValue());
+			else
+				temp->setValue(first_factor->getValue() / second_factor->getValue());
+		}
+		else {
+			if (first_factor->getType() != second_factor->getType()
+				||(first_factor->getType() == TokenType::inttyp && second_factor->getType() == TokenType::inttyp)
+				||(first_factor->getType() == TokenType::chartyp && second_factor->getType() == TokenType::chartyp)
+				)
+			{
+				temp->setType(TokenType::inttyp);
+				middle_code.gen(op, temp, first_factor, second_factor);
+			}
+			else {
+				error_handle.errorMessage(48, LineNo,first_factor->getName(),second_factor->getName());
+			}
+		}
 		//let the first_factor store the result.
 		first_factor = temp;
 	}

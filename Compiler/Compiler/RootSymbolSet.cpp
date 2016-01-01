@@ -56,14 +56,14 @@ bool RootSymbolSet::goback() {
 
 //generate temporatory variable to store the value of 
 // middle for QuaterInstr.
-SymbolItem* RootSymbolSet::genTemp(TokenKind _kind,TokenType _type) {
+SymbolItem* RootSymbolSet::genTemp(TokenKind _kind,TokenType _type,string _tag_string) {
 	SymbolItem *temp = NULL;
 	//the temp's count for not repeating.
 	static int temp_count = 1;
 	//string name = "!t" + temp_count;
 	stringstream name;
 	name << "!TEMP" << temp_count;
-	temp = new SymbolItem(name.str(), _kind, _type);
+	temp = new SymbolItem(name.str(), _kind, _type,0,_tag_string);
 	current_table->enterItem(temp);
 	temp_count++;
 	return temp;
@@ -91,16 +91,16 @@ SymbolSet* RootSymbolSet::serachTable(string _name) {
 }
 
 //find the procedure or function.
-bool RootSymbolSet::findProc(string _name) {
-	SymbolSet *temp = current_table;
-	while (temp != NULL) {
-		if (temp->getProcName()==_name)
-			return true;
-		temp = temp->father_table;
-	}
-	//if table is null,there is no reference.
-	return false;
-}
+//bool RootSymbolSet::findProc(string _name) {
+//	SymbolSet *temp = current_table;
+//	while (temp != NULL) {
+//		if (temp->getProcName()==_name)
+//			return true;
+//		temp = temp->father_table;
+//	}
+//	//if table is null,there is no reference.
+//	return false;
+//}
 
 //we should use the name to 
 string RootSymbolSet::getCurrentName() {
