@@ -999,6 +999,11 @@ SymbolItem* Parser::realParameter(SymbolItem* func,string func_name) {
 	vector<SymbolItem*> real_parameters;
 	if (match(Symbol::lparen)) {
 		next();
+		if (match(Symbol::rparen)) {
+			error_handle.errorMessage(47, LineNo, func_name);
+			next();
+			return NULL;
+		}
 		while (1) {
 			//add the args to the realparameters.
 			if (match(Symbol::ident))
@@ -1127,6 +1132,7 @@ void Parser::forStatement() {
 	level++;
 	PRINT("for statement");
 #endif // DEBUG
+	// the for ident.
 	SymbolItem* first_ident = NULL;
 	expect(Symbol::forsym,"for");
 	if (match(Symbol::ident)) {

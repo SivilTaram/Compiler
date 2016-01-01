@@ -65,6 +65,7 @@ void Error::errorMessage(int errortype, int line,string message1) {
 	case 44: Message << "函数" << message1 << "已经定义过了！" << endl; break;
 	case 45: Message << "函数的返回类型" << message1 << "不是基本类型！" << endl; break;
 	case 46: Message << message1 << "不是数组！" << endl; break;
+	case 47: Message << message1 << "函数调用出错！" << endl; break;
 	case 55: Message << message1 << "形参与实参个数不匹配！" << endl; break;
 	case 56: Message << message1 << "形参与实参的类型不匹配！" << endl; break;
 	case 57: Message << message1 << "不是过程！" << endl; break;
