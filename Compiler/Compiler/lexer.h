@@ -17,12 +17,12 @@ private:
 	int cc = 0;
 	int linenum = 0;
 	char buf[LINEMAX];
-	Error error_handle;
+	Error& error_handle;
 
 public:
 	//values for token 
 	Symbol sym;
-	Lexer(string filename, Error& _error_handle);
+	Lexer(string filename, Error &_error_handle);
 	void getch();
 	Token getsym();
 	void initialReserved();

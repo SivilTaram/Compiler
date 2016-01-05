@@ -3,6 +3,7 @@
 #include <sstream>
 RootSymbolSet::RootSymbolSet() {
 	SymbolItem* root_item = new SymbolItem("root_",TokenKind::PROC,TokenType::voidtyp);
+	root_item->setString("root_");
 	//allocate a new table for root function.
 	root_table = new SymbolSet(root_item, NULL, 0);
 	current_table = root_table;

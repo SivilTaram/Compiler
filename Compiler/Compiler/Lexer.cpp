@@ -8,6 +8,7 @@
 #include "token.h"
 #include "error.h"
 #include "lexer.h"
+#include <sstream>
 
 using namespace std;
 
@@ -232,7 +233,9 @@ Token Lexer::getsym() {
 		map<string, Symbol>::iterator it = reserved.find(str);
 		if (it == reserved.end())
 		{
-			error_handle.errorMessage(6, linenum);
+			stringstream temp;
+			temp << peek;
+			error_handle.errorMessage(6, linenum,temp.str());
 			sym = Symbol::nullsym;
 			getch();
 			return Token(sym,linenum);

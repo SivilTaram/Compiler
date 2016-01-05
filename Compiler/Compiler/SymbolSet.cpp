@@ -54,6 +54,10 @@ string SymbolSet::getProcName() {
 	return proc->getName();
 }
 
+string SymbolSet::getProcLabelName() {
+	return proc->getString();
+}
+
 //get arguments of the procedure or function.
 //[FIXME]:IMPORTANT!!!
 //The arglist should be in order !!!

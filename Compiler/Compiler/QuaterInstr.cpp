@@ -9,7 +9,7 @@ void QuaterInstr::printQuater() {
 		output << "\t" << opcode_name << "\t";	
 
 	if (op == Opcode::BEGIN || op == Opcode::END) {
-		output << ((SymbolSet *)des)->getProcName() << "\t";
+		output << ((SymbolSet *)des)->getProcLabelName() << "\t";
 	}
 	else if (des == NULL && op != Opcode::SETL)
 		output << "-\t";
@@ -30,10 +30,12 @@ void QuaterInstr::printQuater() {
 	else if (des->getKind() == TokenKind::LABEL)
 		output << des->getName() << "\t";
 	else if (des->getKind() == TokenKind::FUNC)
-		output << des->getName() << "\t";
+		output << des->getString() << "\t";
 	else if (des->getKind() == TokenKind::PROC)
-		output << des->getName() << "\t";
+		output << des->getString() << "\t";
 	else if (des->getKind() == TokenKind::ARRAY)
+		output << des->getName() << "\t";
+	else if (des->getKind() == TokenKind::CONST)
 		output << des->getName() << "\t";
 
 	if (op == Opcode::SETL)
@@ -55,10 +57,12 @@ void QuaterInstr::printQuater() {
 	else if (src1->getKind() == TokenKind::VAR)
 		output << src1->getName() << "\t";
 	else if (src1->getKind() == TokenKind::FUNC)
-		output << src1->getName() << "\t";
+		output << src1->getString() << "\t";
 	else if (src1->getKind() == TokenKind::PROC)
-		output << src1->getName() << "\t";
+		output << src1->getString() << "\t";
 	else if (src1->getKind() == TokenKind::ARRAY)
+		output << src1->getName() << "\t";
+	else if (src1->getKind() == TokenKind::CONST)
 		output << src1->getName() << "\t";
 
 	if (op == Opcode::SETL)
@@ -82,12 +86,13 @@ void QuaterInstr::printQuater() {
 	else if (src2->getKind() == TokenKind::LABEL)
 		output << src2->getName() << "\t"; 
 	else if (src2->getKind() == TokenKind::FUNC)
-		output << src2->getName() << "\t";
+		output << src2->getString() << "\t";
 	else if (src2->getKind() == TokenKind::PROC)
-		output << src2->getName() << "\t";
+		output << src2->getString() << "\t";
 	else if (src2->getKind() == TokenKind::ARRAY)
-		output << src2->getName() << "\t";	
-
+		output << src2->getName() << "\t";
+	else if (src1->getKind() == TokenKind::CONST)
+		output << src1->getName() << "\t";
 
 	cout << output.str();
 }

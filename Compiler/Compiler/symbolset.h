@@ -174,6 +174,7 @@ public:
 	SymbolItem* getProcItem();
 	SymbolSet* getProcTable(string _procname);
 	string		getProcName();
+	string getProcLabelName();
 	SymbolSet* enterProc(SymbolItem* _proc);
 
 	vector<SymbolItem*> getArgList();

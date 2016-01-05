@@ -18,7 +18,7 @@ class  Parser {
 private:
 	Error error_handle;
 	Token current_token;
-	Lexer token_lexer;
+	Lexer  token_lexer;
 	RootSymbolSet symbol_set;
 	MiddleCode middle_code;
 

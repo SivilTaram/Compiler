@@ -120,7 +120,7 @@ void MipsInstr::HandleBegin(SymbolItem* des) {
 	// subu $sp,$sp,(display_size+pre_abp_size)
 	// sw $fp,0($sp)
 	// 
-	add(MipsCode::label, current_table->getProcName() + ":");
+	add(MipsCode::label, current_table->getProcLabelName() + ":");
 	// move $fp,$sp to update the $fp.
 	// $fp = $sp
 	add(MipsCode::move, $fp, $sp);
@@ -296,7 +296,7 @@ void MipsInstr::HandleCall(SymbolItem* _caller,SymbolItem* _callee) {
 		}
 	}
 	// jal callee_table;
-	add(MipsCode::jal,callee_table->getProcName());
+	add(MipsCode::jal,callee_table->getProcLabelName());
 }
 
 //load the item -> $i

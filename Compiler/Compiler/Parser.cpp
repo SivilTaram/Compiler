@@ -36,7 +36,8 @@ const symset blockbegsys = {
 const symset facbegsys = {
 	Symbol::ident,
 	Symbol::lparen,
-	Symbol::number
+	Symbol::number,
+	Symbol::charconst
 };
 const symset statbegsys = { 
 	Symbol::endsym,
@@ -53,6 +54,8 @@ const symset parameterlistbegsys = {
 	Symbol::varsym,
 	Symbol::ident
 };
+
+
 //except is suitable for one expression
 //or something shorter.
 void Parser::expect(Symbol sym,string meesage) {
@@ -196,9 +199,9 @@ string Parser::getErrorString(Token token) {
 	if (token.getType() == Symbol::ident)
 		outstream << token.getName();
 	else if (token.getType() == Symbol::charconst)
-		outstream << (char)token.getValue();
+		outstream << "'" << (char)token.getValue() << "'";
 	else if (token.getType() == Symbol::strconst)
-		outstream << token.getName();
+		outstream << "\"" << token.getName() << "\"";
 	else if (token.getType() == Symbol::number)
 		outstream << token.getValue();
 	return outstream.str();
@@ -552,11 +555,13 @@ void Parser::procDec() {
 	{
 		SymbolSet* current_table = symbol_set.getCurrentSet();
 		string proc_real_name = current_token.getName();
-		string proc_name = current_table->getProcName() + current_token.getName()+"_";
-		SymbolItem* proc = symbol_set.insert(proc_name, TokenKind::PROC, TokenType::voidtyp);
+		string proc_name = current_table->getProcLabelName() + current_token.getName()+"_";
+		SymbolItem* proc = symbol_set.insert(proc_real_name, TokenKind::PROC, TokenType::voidtyp);
 		if (proc == NULL)
 			//the procedure is built.
 			error_handle.errorMessage(41,LineNo,proc_real_name);
+		else
+			proc->setString(proc_name);
 		next();
 		// if parameter table's first is '(',then loop
 		// to map the parameter list.
@@ -667,9 +672,9 @@ void Parser::funcDec() {
 #endif // DEBUG
 		SymbolSet* current_table = symbol_set.getCurrentSet();
 		string func_real_name = current_token.getName();
-		string func_name = current_table->getProcName() + current_token.getName() + "_";
+		string func_name = current_table->getProcLabelName() + current_token.getName() + "_";
 		//void is the temporatory return type!!!
-		SymbolItem* item = symbol_set.insert(func_name, TokenKind::FUNC, TokenType::voidtyp);
+		SymbolItem* item = symbol_set.insert(func_real_name, TokenKind::FUNC, TokenType::voidtyp);
 		if (item == NULL)
 		{
 			//[Error]:redefintion.
@@ -677,6 +682,9 @@ void Parser::funcDec() {
 			//we should confrim the func is existing.
 			// strange behavior?????
 			//item = symbol_set.search(func_name);
+		}
+		else {
+			item->setString(func_name);
 		}
 		next();
 		// if parameter table's first is '(',then loop
@@ -745,14 +753,18 @@ void Parser::statement() {
 #endif // DEBUG
 
 	//assignment or proc or func
-	if (match(Symbol::ident)) {
+ 	if (match(Symbol::ident)) {
 		string ident_name = current_token.getName();
 		SymbolItem* ident_item = get(ident_name);
 		next();
 		//proc or func there should be a paren
 		//<过程调用语句>  ::=  <标识符>[<实在参数表>]
-		if(match(Symbol::becomes) || match(Symbol::lsquare))
+		if(match(Symbol::becomes) || match(Symbol::lsquare) || match(Symbol::eql) )
 		{
+			if (match(Symbol::eql))
+				error_handle.errorMessage(42, LineNo);
+			if (ident_item->getKind() == TokenKind::CONST || ident_item->getKind() == TokenKind::TEMP_CON)
+				error_handle.errorMessage(18, LineNo, ident_item->getName());
 			if (ident_item->getKind() == TokenKind::FUNC)
 				assignment(ident_item, ident_name);
 			else
@@ -788,12 +800,14 @@ void Parser::statement() {
 		;
 	}
 	else
+	{
 		//No.15 Unexpected word.
 		error_handle.errorMessage(15, LineNo);
+	}
 #ifdef DEBUG
 	level--;
 #endif // DEBUG
-
+	//skip({ Symbol::semicolon,Symbol::endsym,Symbol::eofsym});
 }
 
 //Handle expressions
@@ -811,7 +825,7 @@ SymbolItem* Parser::expression() {
 		next();
 	}
 	SymbolItem* first_item = item();
-	SymbolItem* temp = NULL;
+ 	SymbolItem* temp = NULL;
 
 	if (first_item!=NULL && minus) {
 		// the constant folding
@@ -845,6 +859,7 @@ SymbolItem* Parser::expression() {
 			)
 		{
 			temp->setKind(TokenKind::TEMP_CON);
+			temp->setType(TokenType::inttyp);
 			if (op == Opcode::ADD)
 				temp->setValue(first_item->getValue() + second_item->getValue());
 			else
@@ -927,8 +942,9 @@ SymbolItem* Parser::factor(){
 			return func;
 		}
 		else if (ident!=NULL && ident->getKind() == TokenKind::FUNC) {
-			callFunc(ident,ident_name);
-			return ident;
+			SymbolItem* func = NULL;
+			func = callFunc(ident,ident_name);
+			return func;
 		}
 		else {
 			return ident;
@@ -1033,7 +1049,10 @@ SymbolItem* Parser::callFunc(SymbolItem* func,string func_name) {
 	else {
 		SymbolSet* callee_func = symbol_set.serachTable(func->getName());
 		SymbolSet* caller_func = symbol_set.getCurrentSet();
+		SymbolItem* temp = symbol_set.genTemp(TokenKind::TEMP, func->getType());
 		middle_code.gen(Opcode::CALL, (SymbolItem*)caller_func, (SymbolItem*)callee_func, NULL);
+		middle_code.gen(Opcode::ASS, temp, func, NULL);
+		return temp;
 	}
 	return NULL;
 }
@@ -1110,24 +1129,28 @@ SymbolItem* Parser::realParameter(SymbolItem* func,string func_name) {
 					&& (*real_iter)->getKind() != TokenKind::PARAVAR
 					&& (*real_iter)->getKind() != TokenKind::TEMP_ADD)
 				)
-			||
+			)
+		{
+			//the real parameter's type can't match
+			error_handle.errorMessage(54, LineNo ,func_name);
+		}
+		else if (
 			(
 				(*form_iter)->getKind() == TokenKind::PARA
-				&& 
+				&&
 				(
-					   (*real_iter)->getKind() !=TokenKind::VAR
-					&& (*real_iter)->getKind() !=TokenKind::PARA
-					&& (*real_iter)->getKind() !=TokenKind::PARAVAR
-					&& (*real_iter)->getKind() !=TokenKind::CONST
-					&& (*real_iter)->getKind() !=TokenKind::TEMP
-					&& (*real_iter)->getKind() !=TokenKind::TEMP_ADD
-					&& (*real_iter)->getKind() !=TokenKind::TEMP_CON
+					(*real_iter)->getKind() != TokenKind::VAR
+					&& (*real_iter)->getKind() != TokenKind::PARA
+					&& (*real_iter)->getKind() != TokenKind::PARAVAR
+					&& (*real_iter)->getKind() != TokenKind::CONST
+					&& (*real_iter)->getKind() != TokenKind::TEMP
+					&& (*real_iter)->getKind() != TokenKind::TEMP_ADD
+					&& (*real_iter)->getKind() != TokenKind::TEMP_CON
 					)
 				)
 			)
 		{
-			//the real parameter's type can't match
-			error_handle.errorMessage(56, LineNo ,func_name);
+			error_handle.errorMessage(56, LineNo, func_name);
 		}
 		real_iter++;
 		form_iter++;
@@ -1412,7 +1435,7 @@ void Parser::compoundStatement() {
 #endif // DEBUG
 	skip(statbegsys);
 	expect(Symbol::beginsym, "begin");
-	statement();
+ 	statement();
 	while (1) {
 		// except ';'
 		if (!match(Symbol::semicolon))
@@ -1457,8 +1480,7 @@ void Parser::assignment(SymbolItem* ident,string func_real_name) {
 		src1 = expression();
 		// ]
 		if (dst != NULL && dst->getKind() != TokenKind::ARRAY)
-			error_handle.errorMessage(46, LineNo , dst->getName());
-
+			error_handle.errorMessage(46, LineNo, dst->getName());
 		//There we can give out a error which belong to the type of out of bound.
 		expect(Symbol::rsquare,"]");
 		expect(Symbol::becomes,":=");
@@ -1526,7 +1548,7 @@ SymbolItem* Parser::item() {
 	PRINT("item");
 #endif // DEBUG
 	//the first factor.
-	skip(facbegsys);
+	skip(facbegsys,27);
 	SymbolItem * first_factor = factor();
 	SymbolItem * temp = NULL;
 	
@@ -1554,6 +1576,7 @@ SymbolItem* Parser::item() {
 		{
 			//let temp be the const.
 			temp->setKind(TokenKind::TEMP_CON);
+			temp->setType(TokenType::inttyp);
 			if (op == Opcode::MUL)
 				temp->setValue(first_factor->getValue() * second_factor->getValue());
 			else
