@@ -88,5 +88,6 @@ public:
 	int getLineNo();
 	string getName();
 	int getValue();
+	string getTypeName();
 };
 

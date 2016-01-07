@@ -31,13 +31,14 @@ public:
 	//If the next symbol is equal to sym,then next;
 	//Else skip some words.
 	void expect(Symbol sym,string message);
+	void expect(Symbol sym, string message1, string message2);
 
 	SymbolItem* get(string _ident_name);
 	//skip some words until a valid follow set.
 	void skip(symset fsys, int error_code);
 	void skip(symset fsys);
 	//test whether the current_token is valid.
-	void test(symset s1, symset s2, int error_code);
+	void test(symset s1);
 
 	string getErrorString(Token token);
 

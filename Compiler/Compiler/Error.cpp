@@ -92,6 +92,7 @@ void Error::errorMessage(int errortype, int line, string message1, string messag
 		//the function have defined before.
 	case 47: Message << message1 << "是 int,不能直接赋值给 char 变量" << message2 << "！" << endl; break;
 	case 48: Message << message1 << "与" << message2 << "类型不是int 或 char，不能参与运算！" << endl; break;
+	case 9: Message << "本该是" << message1 << " 在程序中却是" << message2 << endl; break;
 	default:
 		break;
 	}
