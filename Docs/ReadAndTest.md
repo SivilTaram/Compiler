@@ -1,6 +1,6 @@
 ## 正确测试程序
 
-也可以在这里获取测试程序的txt版本:[链接](https://github.com/SivilTaram/Compiler/Tests/ComplexSamples)
+也可以在这里获取测试程序的txt版本:[链接](https://github.com/SivilTaram/Compiler/tree/master/Tests/ComplexSamples)
 
 ### 1、全覆盖正确测试程序
 ```pascal
