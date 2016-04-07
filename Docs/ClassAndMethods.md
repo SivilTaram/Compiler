@@ -10,15 +10,26 @@
 
 专门用于错误处理的类
 
--   `int getErrorCount()`
+```C++
+int getErrorCount()
+```
 	该函数用于获得编译错误的总数
--	`bool IsSuccess()`
+
+```C++
+bool IsSuccess()
+```
 	在Error类中设置了类属性success，只要有错误信息被加入到错误信息向量中，就会自动将success属性置为false。该函数返回success的值，即表示编译是否成功，是否要打印错误信息等行为。
--	`void print()`
+
+```c++
+void print()
+```
 	将错误信息向量中插入的错误信息全部打印出来
--	`void errorMessage(int errortype, int line)`
-	`void errorMessage(int errortype, int line, string message1)`
-	`void errorMessage(int errortype, int line, string message1, string message2)`
+    
+```c++
+void errorMessage(int errortype, int line)
+void errorMessage(int errortype, int line, string message1)
+void errorMessage(int errortype, int line, string message1, string message2)
+```
 	这三个是分别应用于不同场景的报错函数，其中无法明确指代错误发生或者错误类别本身定义比较模糊的使用第一个报错函数；只能准确指出错在哪个地方使用第二个错误函数；既能指出错在哪个地方，还能得知期望符号串的，使用第三个错误函数。
 
 ## Lexer
