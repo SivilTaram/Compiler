@@ -1,0 +1,7 @@
+function String2Number:integer;
+begin
+    sint := sint * 10;
+    String2Number:=sint
+end;
+begin
+end.

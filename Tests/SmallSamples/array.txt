@@ -1,0 +1,11 @@
+var i:array[15] of integer;
+ j,k:integer;
+begin
+i[3] := 5;
+j := i[3];
+write(j);
+k := i[4];
+j := k;
+write(j);
+write(k);
+end.

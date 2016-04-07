@@ -1,0 +1,12 @@
+const a='a';
+var s:char;
+function gcd(a:char):char;
+begin
+a := a + 1;
+gcd := a;
+end;
+function gcd;
+begin
+s := gcd(a);
+s1 := 3;
+end.

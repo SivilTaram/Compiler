@@ -1,0 +1,5 @@
+begin
+          write("Not valid",sint);
+          write("Not valid");
+          write(sint)
+end.

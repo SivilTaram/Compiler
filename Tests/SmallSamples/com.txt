@@ -1,0 +1,4 @@
+var j:char;
+begin
+ j:='2'
+end

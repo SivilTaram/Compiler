@@ -1,0 +1,12 @@
+const a = 1;
+var c:integer;
+function f(b:integer):integer;
+	begin
+		if b = a
+		then f:= 1
+		else
+			f := b+f(b-1);
+	end;
+begin
+	c := f(3);
+end.

@@ -1,0 +1,13 @@
+procedure f(b:integer);
+	begin
+		if b = 1 then
+			write(b)
+		else
+		begin
+			write(b);
+			f(b-1);
+		end
+	end;
+begin
+	f(8);
+end.

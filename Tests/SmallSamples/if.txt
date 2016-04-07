@@ -1,0 +1,15 @@
+const a = 1,b = 2, c = 'c';
+var i,j:integer;
+begin
+i := 2;
+    if i = 2 then 
+begin
+write(a);
+write(b);
+end
+    else
+begin
+      i := -2;
+write(i);
+end
+end.

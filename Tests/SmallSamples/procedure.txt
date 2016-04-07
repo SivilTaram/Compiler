@@ -1,0 +1,5 @@
+var j:integer;
+i:char;
+begin
+j := i + '2';
+end.

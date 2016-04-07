@@ -1,0 +1,4 @@
+var i,j,k:integer;
+begin
+i := j+k+k*k/k-2+(i-2)/3;
+end.

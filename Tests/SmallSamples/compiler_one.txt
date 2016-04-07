@@ -1,0 +1,14 @@
+const constchar='c';
+var vara : integer;
+function testRec(var b:integer):integer;
+	begin
+		testRec := 1;
+		if b>=1 then
+			b := b + testRec(b)
+		else
+			write("|",b);
+	end;
+begin
+	vara := 4;
+	vara := testRec(vara);
+end.

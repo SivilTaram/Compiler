@@ -1,0 +1,16 @@
+var a,b,c,d,i,r:integer;
+	arr : array[10] of integer;
+begin
+	a:= 10 - 9 ;
+	b:= 20 / 10;
+	c:= 4 * 6 - 21;
+	d:= - 5 + 9;
+	for i:= a to 9 do
+		arr[i] := i*i;
+	r := ( arr[4] - c * d )/( arr[2] * ( arr[3] - b * ( 5 -1 )));
+	write(" a = ", a); 
+	write(" b = ", b);
+	write(" c = ", c);
+	write(" d = ", d);
+	write(" r = ", r)
+end.

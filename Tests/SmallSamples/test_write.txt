@@ -1,0 +1,18 @@
+const a = 'a' , b = 98;
+var i:integer;
+j:char;
+arr:array[100] of char;
+arr1:array[100] of integer;
+begin
+arr[b] := a;
+write(arr[b]);
+arr1[a] := b;
+i := 37;
+write(arr1[a]);
+write(a);
+write(b);
+write(i);
+j := a + b;
+write(a+b);
+write(j+i);
+end.

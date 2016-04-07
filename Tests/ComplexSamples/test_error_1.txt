@@ -1,0 +1,20 @@
+const constchar='c';
+var vara : integer;
+arr:array[100] of integer;
+procedure testPara(c,j:integer;a:char);
+var b:integer;
+	begin
+		b := c;
+		c := -c;
+		if b = -c then
+			write("|success neg");
+		a := 97;
+		write("|a:",a,);
+		j :=12 / c + 'c';
+		write("|j:",j);
+		c := a + (vara * j / );
+		write("|c:",c);
+	end;
+begin
+	testPara(4,6,constchar);
+end.

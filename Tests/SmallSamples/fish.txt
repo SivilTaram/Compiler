@@ -1,0 +1,12 @@
+const x='a';
+var arr:array[10] of char;
+iter:integer;
+begin
+arr[1] := x;
+arr[2] := x;
+arr[3] := x;
+arr[4] := arr[1];
+arr[5] := arr[2];
+for iter:=1 to 5 do
+write(arr[iter]);
+end.

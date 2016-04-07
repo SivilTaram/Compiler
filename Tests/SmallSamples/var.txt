@@ -1,0 +1,4 @@
+var
+i,j:integer;
+ss,d3:char;
+h5:array[10] of char;

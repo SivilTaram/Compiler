@@ -1,0 +1,6 @@
+var s:integer;
+s1,s2:char;
+begin
+read(s);
+read(s1,s2)
+end.

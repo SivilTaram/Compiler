@@ -1,0 +1,13 @@
+var s:array[10] of integer;
+sint,length:integer;
+begin
+do
+      if s[i] >= 0  then
+        if s[i] <=9 then
+          sint := sint * 10 + s[i]
+        else
+          write("Not valid")
+      else
+        write("Not valid")
+    while i<= length-1
+end

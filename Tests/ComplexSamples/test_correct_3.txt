@@ -1,0 +1,16 @@
+procedure testCondition(x,y:integer);
+	begin
+		write(" testCondition begin:");
+		if x=y then write(" x=y:true") else write(" x=y:false");
+		if x>y then write(" x>y:true") else write(" x>y:false");
+		if x<y then write(" x<y:true") else write(" x<y:false");
+		if x>=y then write(" x>=y:true") else write(" x>=y:false");
+		if x<=y then write(" x<=y:true") else write(" x<=y:false");
+		if x<>y then write(" x<>y:true") else write(" x<>y:false");
+		write(" test end                \r\n")
+	end;
+begin
+testCondition(2,2);
+testCondition(1,3);
+testCondition(3,1);
+end.

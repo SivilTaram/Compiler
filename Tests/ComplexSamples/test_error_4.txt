@@ -1,0 +1,182 @@
+const test1j = ' ', test5c5='s',const77=233;
+var i,index,test22,test33,test44,test55,test77,test88,test99,test1010:integer;
+hehe:char;
+test66:array[10] of integer;
+test5c:array[10] of char;
+procedure Test1(j:char);
+begin
+	write("Test1 begin");
+	write(j);
+	write("success");
+	write("\n");
+end;
+procedure Test2(var j:integer);
+	procedure Test2T2(var j:integer);
+	begin
+		j := 5;
+	end;
+begin
+	write("Test2 begin");
+	j := 3;
+	Test2T2(j);
+end;
+function Test3(i:integ):integ;
+begin
+	write("Test3 begin");
+	Test3 := i;
+end;
+function Test4(i:integer):integer;
+var j:integer;
+begin
+	if i=0 then
+		begin
+			write("Test4 begin");
+			Test4 := 0
+		end
+	else
+	begin
+		j := i + Test4(i-1);
+		Test4 := j;
+	end
+end;
+function Test5:char;
+const s = 's';
+begin
+	write("Test5 begin");
+	Test5 := s;
+end;
+procedure Test6(var i:integer);
+begin
+	write("Test6 begin");
+	do
+		i:=i+2
+	while i<5;
+end;
+function Test7(i,j,k,h:integer;m:char):integer;
+var temp:integer;
+begin
+	write("Test7 begin");
+	temp := (m * h + k)/j - i +27;
+	j := +temp;
+	j := -j;
+	Test7 := j;
+end;
+function Test8(j:integer):integer;
+var i,ret:integer;
+begin
+	write("Test8 begin");
+	ret := 0;
+	for j:=(23-20) downto 2 do
+		for i:= 1 to index do
+			ret := ret+i*j;
+	Test8 := -ret;
+end;
+function Test9(para:integer):integer;
+begin
+	if para = 3 then
+		write("Test9 begin");
+	Test9 := para*3;
+end;
+procedure Test10;
+	procedure Test1010;
+	var test1010:integer;
+	begin
+		test1010:=1010;
+	end;
+begin
+write("Test10 begin");
+test1010:=test1010 * 6;
+Test1010;
+end;
+procedure Test11;
+	procedure Test11;
+	begin
+		write("Test11 begin");
+	end;
+begin
+Test11;
+end;
+begin
+	test22 := 3;
+	for 2:= 1 to 110/10 do
+	begin
+		read(index);
+		if index = 1 then
+			Test1(test1j)
+		else if index = 2 then
+		begin
+			Test2(test22);
+			if test22 = 5 then
+				begin
+				write(" success");
+				write("\n")
+				end
+			else
+				write("fail");
+		end
+		else if index = 3 then
+		begin
+			test33 := Test3(55);
+			if test33 = 55 then
+				begin
+				write(" success");
+				write("\n")
+				end
+		end
+		else if index = 4 then
+		begin
+			test44 := Test4(5);
+			if test44 = 15 then
+				begin
+				write(" success");
+				write("\n")
+				end
+		end
+		else if index = 5 then
+		begin
+			test5c[5] := Test5;
+			if test5c[5] = test5c5 then
+					write(" success\n");
+		end
+		else if index = 6 then
+		begin
+			Test6(test66[3]);
+			test22 := test66[3];
+			if test22 = 6 then
+					write(" success\n");
+		end
+		else if index = 7 then
+		begin
+			test77 := Test7(27,5,20,3,test5c5);
+			if test77 = -73 then
+				write(" success\n");
+		end
+		else if index = 8 then
+		begin
+			test88 := Test8(233);
+			if test88 !== -180 then
+			ssss	write(" sdsuccess\n");
+		end
+		else if index = 9 then
+		begin
+			test99 := Test9(Test9(Test9(3)));
+			if test99 = 81 then
+				write(" success\n");
+		end
+		else if index = 10 then
+		begin
+			test1010 := 5;
+			Test10;
+			if test1010 = 30 then
+				write(" success\n");
+		end
+		else if index = 11 then
+		begin
+			Test11;
+		end
+	end;
+	read(hehe);
+	test5c[6] := hehe;
+	write("You input",test5c[6]);
+	write("Finished!\n");
+end.

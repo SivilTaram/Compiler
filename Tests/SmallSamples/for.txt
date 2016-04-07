@@ -1,0 +1,7 @@
+var b,i,j: integer;
+begin
+b := 1;
+j := 2;
+	for i:=10 downto 1 do
+	write(b)
+end.

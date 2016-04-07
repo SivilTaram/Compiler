@@ -1,0 +1,33 @@
+.data
+.text
+j root_
+# begin
+ root_:
+move $fp,$sp
+sw $ra,0($fp)
+sw $s0,-4($fp)
+sw $s1,-8($fp)
+sw $s2,-12($fp)
+sw $s3,-16($fp)
+sw $s4,-20($fp)
+sw $s5,-24($fp)
+sw $s6,-28($fp)
+sw $s7,-32($fp)
+subi $sp,$sp,52
+# assign
+li $t0,11
+sw $t0,-36($fp)
+# assign
+li $t0,-7
+sw $t0,-40($fp)
+# write
+lw $t0,-36($fp)
+add $a0,$0,$t0
+li $v0,1
+syscall
+# write
+lw $t0,-40($fp)
+add $a0,$0,$t0
+li $v0,1
+syscall
+# end

@@ -9,6 +9,7 @@ Qian(SivilTaram)在北航编译课程设计的工程项目与文档。
 - [类,方法与函数](Docs/ClassAndMethods.md)
 - [四元式的设计方案](Docs/QuaterInstr.md)
 - [符号表的设计方案](Docs/SymbolSetDesign.md)
+- [测试样例与输出结果](Docs/ReadAndTest.md)
 
 注意事项：
 

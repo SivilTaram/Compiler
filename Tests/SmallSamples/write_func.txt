@@ -1,0 +1,7 @@
+function A:integer;
+begin
+A := 3;
+end;
+begin
+write("A:",A);
+end.

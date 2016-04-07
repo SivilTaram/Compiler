@@ -1,0 +1,8 @@
+var a,b:integer;
+begin
+if a = 0 then
+   if b = 0 then 
+   a := a + 1
+   else
+     b := b + 1
+end.

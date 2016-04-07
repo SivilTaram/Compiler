@@ -1,0 +1,10 @@
+var i:integer;
+function gcd(var i:integer;j:integer):integer;
+begin
+i := i + 1;
+gcd := i + j;
+end;
+begin
+i := 2;
+write(i+gcd(i,gcd(i,2)));
+end.

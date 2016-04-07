@@ -1,0 +1,14 @@
+var i,j:integer;
+function mod(i,j:integer):integer;
+begin
+i := i * i;
+write("get mod");
+end;
+function gcd(i,j:integer):integer;
+begin
+gcd := j ;
+end;
+begin
+i := 1;
+write(gcd(i,mod(i,j)));
+end.

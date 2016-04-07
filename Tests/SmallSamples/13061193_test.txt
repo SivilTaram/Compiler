@@ -1,0 +1,75 @@
+const constchar='c';
+var vara : integer;
+arr:array[100] of integer;
+procedure testmulti(var c :integer);
+	begin
+		c := c+6;
+	end;
+procedure testvar(var b :integer); 
+	begin
+		b := b+1;
+		write("|",b);
+		testmulti(b);
+	end;
+procedure testPara(c,j:integer;a:char);
+var b:integer;
+	begin
+		b := c;
+		c := -c;
+		if b = -c then
+			write("|success neg");
+		a := constchar;
+		write("|a:",a);
+		j :=12 / c;
+		write("|j:",j);
+		c := a + (vara * j);
+		write("|c:",c);
+	end;
+function testFuncReturn:integer;
+	begin
+		testFuncReturn := 999;
+	end;
+procedure f(b:integer);
+	begin
+		if b = 1 then
+			write("|",b)
+		else
+		begin
+			write("|",b);
+			f(b-1);
+		end
+	end;
+procedure testFor;
+	begin
+		for vara:=1 to 10 do
+			write("|",vara)
+	end;
+procedure testDo;
+	begin
+	do
+	begin
+		write("|",vara);
+		vara := vara -1 ;
+	end
+	while vara >= 1;
+	end;		
+begin
+	vara := 0;
+	testvar(vara);
+	write("|vara:",vara);
+	vara := testFuncReturn;
+	if vara = 999 then
+		write("|success fun return")
+	else
+		write("|fail fun return");
+	testPara(4,6,constchar);
+	f(8);
+	arr[1] := 6;
+	arr[2] := arr[1] * arr[1];
+	write("|arr[1]:",arr[1]);
+	write("|arr[2]:",arr[2]);
+	testFor;
+	testDo;
+	read(vara);
+	write("|readint vara:",vara);
+end.

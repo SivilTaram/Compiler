@@ -1,0 +1,21 @@
+const sc='c';
+var c,a,j,vara:integer;
+i:char;
+cc:array[100] of char;
+cc2:array[100] of integer;
+function A:char;
+begin
+A := sc;
+end;
+begin
+	i := A;
+	write(i)
+	c := i+'c';
+	write(c,);
+	cc[2] := i;
+	write(cc[2]);
+	cc2[2,3] := cc[2];
+	write(cc2[2]);
+	a := i+j-c/;
+	write(a);
+end.

@@ -1,0 +1,11 @@
+const a = 1,c='c';
+var i,j,k:integer;
+begin
+i := a;
+write(i);
+j := c * a + i;
+write(j);
+k := c/a - j;
+write(k);
+write("this is a big data");
+end.

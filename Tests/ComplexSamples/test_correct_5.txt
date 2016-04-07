@@ -1,0 +1,51 @@
+var B:integer;
+function A:integer;
+	var B:char;
+	function C:integer;
+		begin
+		write("this is the second C\n");
+		C := 2;
+		end;
+	begin
+		write("this is the second A\n");
+		A := 97;
+	end;
+function C:integer;
+	var B:integer;
+	function A:integer;
+		begin
+			write("this is the second A\n");
+			A := 99;
+		end;
+	begin
+	if A = 99 then
+		write("correct,call inner A:")
+	else
+		write("not correct,call the wrong A");
+	B := 5;
+	write("the inner B:",B);
+	write("\n");
+	C := -1;
+	end;
+procedure D;
+	var D:integer;
+	begin
+	write("this is the procedure D\n");
+	if C = -1 then
+		begin
+		D := C;
+		write("correct,this is the var D:",D);
+		end
+	else
+		write("not correct,call the wrong C");
+	write("\n");
+	D := A;
+	end;
+begin
+write("the init of outter B:",B);
+write("\n");
+B := C;
+write("the last of outter B:",B);
+write("\n");
+D;
+end.

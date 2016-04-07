@@ -1,0 +1,24 @@
+procedure A;
+var a:integer;
+	procedure B;
+	var b:integer;
+		procedure C;
+		var c:integer;
+		begin
+		c := 2;
+		b := b + 1;
+		a := a + 2;
+		write(a);
+		write(b);
+		end;
+	begin
+	b := 0;
+	C;
+	end;
+begin
+a := 3;
+B;
+end;
+begin
+A;
+end.

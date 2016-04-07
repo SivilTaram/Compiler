@@ -1,0 +1,16 @@
+var a : integer;
+procedure p1(var c :integer);
+	begin
+		c := c+6;
+	end;
+procedure p2(var b :integer); 
+	begin
+		b := b+1;
+		write(b);
+		p1(b);
+	end;
+begin
+	a := 0;
+	p2(a);
+	write(a);
+end.

@@ -1,0 +1,14 @@
+const A='s',B='b';
+var a,b:integer;
+c:char;
+begin
+c := A;
+a := c;
+b := c + c;
+write(b);
+write(a);
+write(c);
+c := c;
+c := c + c;
+c := a ;
+end.
