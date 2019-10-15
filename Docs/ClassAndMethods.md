@@ -3,8 +3,8 @@
 ## Overview
 
 - **public class:** Error、Lexer、MiddleCode、MipsInstr、Parser、QuaterInstr、RootSymbolSet、SymbolSet、Token
-- **private class:**Dataseg、Instruction、SymbolItem
-- **Enum class:**MipsCode、TokenKind、TokenType、Symbol、Opcode
+- **private class:** Dataseg、Instruction、SymbolItem
+- **Enum class:** MipsCode、TokenKind、TokenType、Symbol、Opcode
 
 目录:
 - [Error](#error)
