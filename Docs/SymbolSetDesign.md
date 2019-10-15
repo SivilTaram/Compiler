@@ -36,7 +36,7 @@ private:
 2. 同名变量的不同作用域
 3. 同名函数、同名过程的不同作用域
 4. 函数与过程互相之间的可见与封装
-5. 
+
 最终采用的方案是经过跟同学探讨后得到的一种方案，这种方案设计上很像一颗B树，但是其中加入了一个很重要的东西：父指针，这种方案的设计如下图可以很清楚地可以看出。
 
 ![SymbolSetDesign.png](http://static.zybuluo.com/lq372899855/pcbpxktusurznusvgbdxh3cn/SymbolDesign.png)
